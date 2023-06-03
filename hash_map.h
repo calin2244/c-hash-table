@@ -7,6 +7,20 @@
 #define CAPACITY 100 // Table Size
 #define ENTRIES "entries.txt"
 
+// *FOR PERFORMANCE TESTING
+
+#define max(a,b) \
+    ({ __typeof__ (a) _a = (a); \
+        __typeof__ (b) _b = (b); \
+        _a > _b ? _a : _b; }) 
+
+typedef struct pair{
+    size_t maxChainLen;
+    size_t hashOfMaxChain;
+}pair;
+
+// *END OF PERFORMANCE TESTING
+
 // Hash Functions
 size_t hash_func_str(const void* key, size_t capacity){
     size_t hash = 0xcbf29ce484222325; // FNV_offset_basis
@@ -37,6 +51,7 @@ typedef struct{
 
 void ht_free(HashTable** ht);
 void ht_insert(HashTable* ht, const void* key, const void* val);
+pair maximumChainLength(HashTable* ht);
 
 HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
@@ -290,9 +305,9 @@ void ht_free(HashTable** ht){
 
 // PRINTING!!
 
-typedef void (*PrintFunc)(size_t, const void*, const void*);
+typedef void (*PrintHelper)(size_t, const void*, const void*);
 
-void print_ht(HashTable* ht, PrintFunc printHasht){
+void print_ht(HashTable* ht, PrintHelper printHasht){
     for(size_t hash = 0; hash < ht->capacity; ++hash){
         if(ht->buckets[hash]){
             printHasht(hash, ht->buckets[hash]->key, ht->buckets[hash]->val);
@@ -305,11 +320,17 @@ void print_string_string(size_t hash, const void* key, const void* val){
 }
 
 void printHashTableInfo(HashTable* ht){
+    pair stats = maximumChainLength(ht);
+
     printf("-----------------------\n");
-    printf("COLLISIONS: %d\n", ht->collisions);
-    printf("HASHTABLE SIZE: %ld\n", get_num_of_buckets(ht));
-    printf("LOAD FACTOR: %f\n", ht->load_factor);
-    printf("CAPACITY: %ld\n", ht->capacity);
+    printf("Total Collisions: %d\n", ht->collisions);
+
+    printf("Maximum Chain Length: %ld\n", stats.maxChainLen);
+    printf("Hash For the Maximum Chain: %ld\n", stats.hashOfMaxChain);
+
+    printf("HashTable Size: %ld\n", get_num_of_buckets(ht));
+    printf("Load Factor: %f\n", ht->load_factor);
+    printf("Capacity: %ld\n", ht->capacity);
     printf("-----------------------\n");
 }
 
@@ -345,4 +366,30 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     }
 
     fclose(m_file);
+}
+
+// Performance stats
+pair maximumChainLength(HashTable* ht){
+    size_t maxLen = 0;
+    size_t posOfMaxLen = -1;
+    for(size_t i = 0; i < ht->capacity; ++i){
+        Ht_Item* curr_item = ht->buckets[i];
+        int currLen = 0;
+        if(curr_item){
+            while(curr_item){
+                curr_item = curr_item->next;
+                currLen++;
+            }
+
+            if(maxLen < currLen){
+                maxLen = currLen;
+                posOfMaxLen = i;
+            }
+        }
+    }
+
+    pair out;
+    out.maxChainLen = maxLen;
+    out.hashOfMaxChain = posOfMaxLen;
+    return out;
 }
