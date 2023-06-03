@@ -44,21 +44,18 @@ Ht_Item* ht_iterator_get(HashIterator* iterator){
     return NULL;
 }
 
-Ht_Item* ht_iterator_next(HashIterator* iterator){
-    Ht_Item* item = iterator->curr_item;
+void ht_iterator_next(HashIterator* iterator){
     iterator->curr_item = iterator->curr_item->next;
     if(!iterator->curr_item){
         iterator->curr_bucket++;
         while(iterator->curr_bucket < iterator->ht->capacity){
             iterator->curr_item = iterator->ht->buckets[iterator->curr_bucket];
             if(iterator->curr_item)
-                return iterator->curr_item;
+                return;
             
             iterator->curr_bucket++;
         }
     }
-
-    return NULL;
 }
 
 Ht_Item* ht_iterator_get_nth_item(HashIterator* iterator, size_t n){    
@@ -73,8 +70,13 @@ Ht_Item* ht_iterator_get_nth_item(HashIterator* iterator, size_t n){
         if(n <= 0)
             return curr;
 
-        curr = ht_iterator_next(iterator);
+        ht_iterator_next(iterator);
     }
 
     return NULL;
+}
+
+void ht_iterator_reset(HashIterator* iterator){
+    iterator->curr_bucket = 0;
+    iterator->curr_item = iterator->ht->buckets[0];
 }
