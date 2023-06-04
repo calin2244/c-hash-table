@@ -23,8 +23,9 @@ def generate_dataset(size, collision_rate):
 
     return dataset
 
-# Generate a dataset of size 4500 with a collision rate of 0.1 (10% chance of collision)
-dataset = generate_dataset(10, 0)
+# Generate a dataset of size 500k with a collision rate of 0.4 (10% chance of collision)
+# Allocating around 78 million bytes
+dataset = generate_dataset(500000, 0.4)
 
 # Write the dataset to a file
 with open('entries.txt', 'w') as file:
