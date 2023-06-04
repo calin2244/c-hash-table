@@ -54,7 +54,7 @@ Ht_Item* ht_get(HashTable* ht, const void* key);
 Ht_Item* ht_item_create(const void* key, const void* val);
 void ht_modify_item(HashTable* ht, const void* key, const void* val);
 void print_ht(HashTable* ht, PrintHelper);
-void handle_collision_chaining(HashTable* ht, Ht_Item** curr_item, Ht_Item* item, const void* val);
+void handle_collision_chaining(HashTable* ht, Ht_Item* item, const void* val);
 void printHashTableInfo(HashTable* ht);
 void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name);
 void parseFileAndRemoveEntries(HashTable* ht, const char* file_name);

@@ -76,7 +76,7 @@ Ht_Item* ht_item_create(const void* key, const void* val){
 
     uint32_t key_size_bytes = sizeof(strlen((char*)key));
     new_item->key = malloc(key_size_bytes);
-    memcpy(new_item->key, key, key_size_bytes);
+    (void)memcpy(new_item->key, key, key_size_bytes);
 
 
     // Or just do strdup for strings
@@ -86,7 +86,7 @@ Ht_Item* ht_item_create(const void* key, const void* val){
     return new_item;
 }
 
-void handle_collision_chaining(HashTable* ht, Ht_Item** curr_item, Ht_Item* item, const void* val){
+void handle_collision_chaining(HashTable* ht, Ht_Item* item, const void* val){
     if(item->val){
         free(item->val);
         item->val = strdup((char*)val);
@@ -110,10 +110,11 @@ void ht_insert(HashTable* ht, const void* key, const void* val){
 
     while(item){
         if(strcmp((char*)item->key, (char*)key) == 0){
-            handle_collision_chaining(ht, curr_item, item, val);
+            handle_collision_chaining(ht, item, val);
             return;
         }
 
+        // Pointing to the next item in the list, not destroying the linkage
         curr_item = &(*curr_item)->next;
         item = *curr_item;
     }
@@ -183,7 +184,7 @@ void ht_modify_item(HashTable* ht, const void* key, const void* val){
     if(ht_has_key(ht, key)){
         Ht_Item* to_modify = ht_get(ht, key);
         size_t value_bytes = sizeof((char*)to_modify->val);
-        strncpy((char*)to_modify->val, (char*)val, value_bytes);
+        (void)strncpy((char*)to_modify->val, (char*)val, value_bytes);
     }
 }
 
@@ -266,8 +267,19 @@ void ht_free(HashTable** ht){
 
 void print_ht(HashTable* ht, PrintHelper printHasht){
     for(size_t hash = 0; hash < ht->capacity; ++hash){
-        if(ht->buckets[hash]){
+        Ht_Item* item = ht->buckets[hash];
+        if(item){
             printHasht(hash, ht->buckets[hash]->key, ht->buckets[hash]->val);
+            if(item->next){
+                (void)printf("-----------------------\nChained with: \n");
+                item = item->next;
+                while(item){
+                    
+                    (void)printf("\t %s: %s ", (char*)item->key, (char*)item->val);
+                    item = item->next;
+                }
+                (void)printf("-----------------------\n\n");
+            }
         }
     }
 }
@@ -279,16 +291,16 @@ void print_string_string(size_t hash, const void* key, const void* val){
 void printHashTableInfo(HashTable* ht){
     pair stats = maximumChainLength(ht);
 
-    printf("-----------------------\n");
-    printf("Total Collisions: %d\n", ht->collisions);
+    (void)printf("-----------------------\n");
+    (void)printf("Total Collisions: %d\n", ht->collisions);
 
-    printf("Maximum Chain Length: %ld\n", stats.maxChainLen);
-    printf("Hash For the Maximum Chain: %ld\n", stats.hashOfMaxChain);
+    (void)printf("Maximum Chain Length: %ld\n", stats.maxChainLen);
+    (void)printf("Hash For the Maximum Chain: %ld\n", stats.hashOfMaxChain);
 
-    printf("HashTable Size: %ld\n", get_num_of_buckets(ht));
-    printf("Load Factor: %f\n", ht->load_factor);
-    printf("Capacity: %ld\n", ht->capacity);
-    printf("-----------------------\n");
+    (void)printf("HashTable Size: %ld\n", get_num_of_buckets(ht));
+    (void)printf("Load Factor: %f\n", ht->load_factor);
+    (void)printf("Capacity: %ld\n", ht->capacity);
+    (void)printf("-----------------------\n");
 }
 
 // Parsing
@@ -296,7 +308,7 @@ void printHashTableInfo(HashTable* ht){
 void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     FILE* m_file = fopen(file_name, "r");
     if(!m_file){
-        printf("%s", "Failed to open the file\n");
+        (void)printf("%s", "Failed to open the file\n");
         return;
     }
 
@@ -311,7 +323,7 @@ void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
 }
 
 void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
-    FILE* m_file = fopen(ENTRIES, "r");
+    FILE* m_file = fopen(file_name, "r");
     fseek(m_file, 0, SEEK_SET);
 
     char line_buffer[16];
@@ -331,8 +343,8 @@ pair maximumChainLength(HashTable* ht){
     size_t posOfMaxLen = -1;
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item* curr_item = ht->buckets[i];
-        int currLen = 0;
         if(curr_item){
+            size_t currLen = 0;
             while(curr_item){
                 curr_item = curr_item->next;
                 currLen++;
