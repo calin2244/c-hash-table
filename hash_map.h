@@ -21,17 +21,16 @@
 
 typedef struct Ht_Item{
     void* key;
-    size_t key_size; // in bytes
     void* val;
     struct Ht_Item* next;
 }Ht_Item;
 
 typedef struct HashTable{
-    Ht_Item** buckets;
     size_t size; // The current size of the Hash Table
     size_t capacity; // Max Size
     int collisions;
     float load_factor;
+    Ht_Item** buckets;
     size_t (*hash_func)(const void*, size_t);
 }HashTable;
 
