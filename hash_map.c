@@ -275,10 +275,12 @@ void print_ht(HashTable* ht, PrintHelper printHasht){
                 item = item->next;
                 while(item){
                     
-                    (void)printf("\t %s: %s ", (char*)item->key, (char*)item->val);
+                    (void)printf("[%s: %s]", (char*)item->key, (char*)item->val);
                     item = item->next;
+                    if(item)
+                        (void)printf(", ");
                 }
-                (void)printf("-----------------------\n\n");
+                (void)printf("\n-----------------------\n\n");
             }
         }
     }
@@ -315,7 +317,17 @@ void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     char line_buffer[16];
     while(fgets(line_buffer, sizeof(line_buffer), m_file)){
         const char* key = strtok(line_buffer, " ");
-        const char* val = strtok(NULL, " ");
+        char* val = strtok(NULL, "\0");
+
+        // right-trim the value
+        size_t firstAlpha = strlen(val) - 1;
+        while(firstAlpha){
+            if(val[firstAlpha] == '\n' || val[firstAlpha] == ' ' || val[firstAlpha] == '\r')
+                firstAlpha--;
+            else break;
+        }
+        val[firstAlpha + 1] = '\0';
+
         ht_insert(ht, key, val);
     }
 
