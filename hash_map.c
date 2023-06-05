@@ -19,8 +19,8 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
         return NULL;
     } 
 
+    hash_t->size = 0;
     hash_t->capacity = capacity;
-    hash_t->hash_func = hash_func;
     hash_t->collisions = 0;
     hash_t->load_factor = 0;
     hash_t->buckets = (Ht_Item**)calloc(hash_t->capacity, sizeof(Ht_Item*)); 
@@ -30,6 +30,7 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
         return NULL;
     }
 
+    hash_t->hash_func = hash_func;
     return hash_t;
 }
 
@@ -45,7 +46,7 @@ void ht_resize(HashTable* ht, size_t new_capacity){
     // Iterate through the old buckets and rehash the items into the new hash table
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item* item = ht->buckets[i];
-        while(item != NULL){
+        while(item){
             ht_insert(new_ht, item->key, item->val);
             Ht_Item* next = item->next;
             free(item->key);
@@ -73,14 +74,25 @@ void ht_resize(HashTable* ht, size_t new_capacity){
 
 Ht_Item* ht_item_create(const void* key, const void* val){
     Ht_Item* new_item = (Ht_Item*)malloc(sizeof(Ht_Item));
+    if(!new_item)
+        return NULL;
 
-    uint32_t key_size_bytes = sizeof(strlen((char*)key));
+    uint32_t key_size_bytes = strlen((char*)key) + 1;
     new_item->key = malloc(key_size_bytes);
-    (void)memcpy(new_item->key, key, key_size_bytes);
+    if(!new_item->key){
+        free(new_item);
+        return NULL;
+    }
 
+    (void)memcpy(new_item->key, key, key_size_bytes);
 
     // Or just do strdup for strings
     new_item->val = strdup((const char*)val);
+    if(!new_item->val){
+        free(new_item->key);
+        free(new_item);
+        return NULL;
+    }
 
     new_item->next = NULL;
     return new_item;
@@ -91,37 +103,34 @@ void handle_collision_chaining(HashTable* ht, Ht_Item* item, const void* val){
         free(item->val);
         item->val = strdup((char*)val);
         ht->collisions++;
-        return;
     }
 }
 
 // Key as a string, value as a string
 void ht_insert(HashTable* ht, const void* key, const void* val){
     size_t idx = ht->hash_func(key, ht->capacity);
-    Ht_Item** curr_item = &ht->buckets[idx];
-    Ht_Item* item = *curr_item;
-
-    if(ht->load_factor > 1){
+    
+    // Resizing, the threshold being 0.7
+    if(ht->load_factor > 0.7){
         ht_resize(ht, ht->capacity * 2);
         idx = ht->hash_func(key, ht->capacity);
-        curr_item = &ht->buckets[idx];
-        item = *curr_item;
     }
+    ht->load_factor = (float)ht->size / (float)ht->capacity;
 
-    while(item){
-        if(strcmp((char*)item->key, (char*)key) == 0){
-            handle_collision_chaining(ht, item, val);
+    Ht_Item** curr_item = &ht->buckets[idx];
+    
+    while(*curr_item){
+        if(strcmp((char*)(*curr_item)->key, (char*)key) == 0){
+            handle_collision_chaining(ht, *curr_item, val);
             return;
         }
 
         // Pointing to the next item in the list, not destroying the linkage
         curr_item = &(*curr_item)->next;
-        item = *curr_item;
     }
 
     *curr_item = ht_item_create(key, val);
     ht->size++;
-    ht->load_factor = (float)ht->size / (float)ht->capacity;
 }
 
 bool ht_has_key(const HashTable* ht, const void* key){
@@ -315,9 +324,11 @@ void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     }
 
     char line_buffer[16];
+    char* key = NULL;
+    char* val = NULL;
     while(fgets(line_buffer, sizeof(line_buffer), m_file)){
-        const char* key = strtok(line_buffer, " ");
-        char* val = strtok(NULL, "\0");
+        key = strtok(line_buffer, " ");
+        val = strtok(NULL, "\n");
 
         // right-trim the value
         size_t firstAlpha = strlen(val) - 1;
