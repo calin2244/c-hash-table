@@ -1,5 +1,7 @@
 #include "hash_map.h"
 
+#define THRESHOLD 0.7f
+
 // Hash Functions
 size_t hash_func_str(const void* key, size_t capacity){
     size_t hash = 0xcbf29ce484222325; // FNV_offset_basis
@@ -15,7 +17,7 @@ size_t hash_func_str(const void* key, size_t capacity){
 HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
 
-    if(hash_t == NULL){ //!hash_t, malloc failed
+    if(!hash_t){ // malloc failed
         return NULL;
     } 
 
@@ -25,7 +27,7 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
     hash_t->load_factor = 0;
     hash_t->buckets = (Ht_Item**)calloc(hash_t->capacity, sizeof(Ht_Item*)); 
 
-    if(hash_t->buckets == NULL){
+    if(!hash_t->buckets){
         free(hash_t);
         return NULL;
     }
@@ -35,11 +37,9 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
 }
 
 void ht_resize(HashTable* ht, size_t new_capacity){
-    // std::cout << "RESIZING" << '\n';
     // Create a new hash table with the new capacity
     HashTable* new_ht = ht_create(new_capacity, hash_func_str);
-    if(new_ht == NULL){
-        // Failed to create a new hash table
+    if(!new_ht){
         return;
     }
 
@@ -111,7 +111,7 @@ void ht_insert(HashTable* ht, const void* key, const void* val){
     size_t idx = ht->hash_func(key, ht->capacity);
     
     // Resizing, the threshold being 0.7
-    if(ht->load_factor > 0.7){
+    if(ht->load_factor > THRESHOLD){
         ht_resize(ht, ht->capacity * 2);
         idx = ht->hash_func(key, ht->capacity);
     }
@@ -138,7 +138,7 @@ bool ht_has_key(const HashTable* ht, const void* key){
     Ht_Item* item = ht->buckets[idx];
 
     while(item){
-        if (strcmp((const char*)item->key, (const char*)key) == 0) {
+        if (strcmp((const char*)item->key, (const char*)key) == 0){
             return true; // Key found
         }
         item = item->next;
@@ -170,7 +170,7 @@ Ht_Item* ht_remove(HashTable* ht, const void* key) {
     return NULL;
 }
 
-Ht_Item* ht_get(HashTable* ht, const void* key){
+Ht_Item* ht_get_item(HashTable* ht, const void* key){
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item* curr_item = ht->buckets[idx];
 
@@ -191,56 +191,29 @@ Ht_Item* ht_get(HashTable* ht, const void* key){
 
 void ht_modify_item(HashTable* ht, const void* key, const void* val){
     if(ht_has_key(ht, key)){
-        Ht_Item* to_modify = ht_get(ht, key);
+        Ht_Item* to_modify = ht_get_item(ht, key);
         size_t value_bytes = sizeof((char*)to_modify->val);
         (void)strncpy((char*)to_modify->val, (char*)val, value_bytes);
     }
 }
 
-/*
-BAD INSERT :////
-void ht_insert(HashTable* ht, const void* key, const void* val){
+// Not safe, it borrows the item // pointer to item
+// Assumes user won't free the memory
+void* ht_search(HashTable* ht, const void* key){
     size_t idx = ht->hash_func(key, ht->capacity);
-    Ht_Item** curr_item = &ht->buckets[idx];
-    Ht_Item* item = *curr_item;
+    Ht_Item* curr_item = ht->buckets[idx];
 
-    if(ht->load_factor >= 0.6){
-        ht_resize(&ht, ht->capacity * 2);
-        idx = ht->hash_func(key, ht->capacity);
-        curr_item = &ht->buckets[idx];
-        item = *curr_item;
+    // In case there is chaining
+    while(curr_item){
+        if(strcmp((char*)curr_item->key, (char*)key) == 0)
+            return curr_item->val;
+        
+        curr_item = curr_item->next;
     }
 
-    while(item){
-        if(strcmp((char*)item->key, (char*)key) == 0){
-            handle_collision_chaining(ht, curr_item, item, val);
-            return;
-        }
+    // if curr_item is NULL
+    return NULL;
 
-        curr_item = &(*curr_item)->next;
-        item = *curr_item;
-    }
-
-    *curr_item = ht_item_create(key, val);
-    ht->size++;
-    ht->load_factor = (float)ht->size / (float)ht->capacity;
-}
-
-*/
-
-size_t get_num_of_buckets(HashTable* ht){
-    size_t buckets = 0;
-    for(size_t i = 0; i < ht->capacity; ++i){
-        if(ht->buckets[i]){
-            Ht_Item* curr = ht->buckets[i];
-            while(curr){
-                buckets++;
-                curr = curr->next;
-            }
-        }
-    }
-
-    return buckets;
 }
 
 // FREEING!
@@ -308,7 +281,7 @@ void printHashTableInfo(HashTable* ht){
     (void)printf("Maximum Chain Length: %ld\n", stats.maxChainLen);
     (void)printf("Hash For the Maximum Chain: %ld\n", stats.hashOfMaxChain);
 
-    (void)printf("HashTable Size: %ld\n", get_num_of_buckets(ht));
+    (void)printf("HashTable Size: %ld\n", ht->size);
     (void)printf("Load Factor: %f\n", ht->load_factor);
     (void)printf("Capacity: %ld\n", ht->capacity);
     (void)printf("-----------------------\n");

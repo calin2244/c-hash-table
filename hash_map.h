@@ -42,16 +42,16 @@ typedef struct pair{
 typedef void (*PrintHelper)(size_t, const void*, const void*);
 
 size_t hash_func_str(const void* key, size_t capacity);
-size_t get_num_of_buckets(HashTable* ht);
 HashTable* ht_create(size_t capacity, size_t (*hash_func)(const void*, size_t));
 void ht_resize(HashTable* ht, size_t new_capacity);
 void ht_free(HashTable** ht);
 void ht_insert(HashTable* ht, const void* key, const void* val);
 bool ht_has_key(const HashTable* ht, const void* key);
 Ht_Item* ht_remove(HashTable* ht, const void* key);
-Ht_Item* ht_get(HashTable* ht, const void* key);
+Ht_Item* ht_get_item(HashTable* ht, const void* key);
 Ht_Item* ht_item_create(const void* key, const void* val);
 void ht_modify_item(HashTable* ht, const void* key, const void* val);
+void* ht_search(HashTable* ht, const void* key);
 void print_ht(HashTable* ht, PrintHelper);
 void handle_collision_chaining(HashTable* ht, Ht_Item* item, const void* val);
 void printHashTableInfo(HashTable* ht);
