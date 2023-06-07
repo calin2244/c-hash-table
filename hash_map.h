@@ -33,17 +33,11 @@ typedef struct HashTable{
     float load_factor;
     Ht_Item** buckets;
     size_t (*hash_func)(const void*, size_t);
+    void (*handle_collision)(Ht_Item* item, const void* val, size_t val_size);
 }HashTable;
 
-typedef struct pair{
-    size_t maxChainLen;
-    size_t hashOfMaxChain;
-}pair;
-
-typedef void (*PrintHelper)(size_t, const void*, const void*);
-
 size_t hash_func_str(const void* key, size_t capacity);
-HashTable* ht_create(size_t capacity, size_t (*hash_func)(const void*, size_t));
+HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t), void(*handle_collision)(Ht_Item*, const void* val, size_t val_size));
 void ht_resize(HashTable* ht, size_t new_capacity, size_t key_size, size_t value_size);
 void ht_free(HashTable** ht);
 void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val, size_t val_size);
@@ -53,13 +47,9 @@ Ht_Item* ht_get_item(HashTable* ht, const void* key);
 Ht_Item* ht_item_create(const void* key, size_t key_size, const void* val, size_t val_size);
 void ht_modify_item(HashTable* ht, const void* key, const void* val);
 void* ht_search(HashTable* ht, const void* key);
-void ht_print(HashTable* ht, PrintHelper);
-void handle_collision_chaining(HashTable* ht, Ht_Item* item, const void* val);
+void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size);
 void printHashTableInfo(HashTable* ht);
-void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name);
-void parseFileAndRemoveEntries(HashTable* ht, const char* file_name);
 void free_ht_item(Ht_Item** item);
 void print_string_string(size_t hash, const void* key, const void* val);
-pair maximumChainLength(HashTable* ht);
 
 #endif // HASH_TABLE_H
