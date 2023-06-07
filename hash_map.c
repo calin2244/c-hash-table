@@ -1,6 +1,5 @@
 #include "hash_map.h"
 
-#define THRESHOLD 0.7f
 
 // Hash Functions
 size_t hash_func_str(const void* key, size_t capacity){
@@ -36,7 +35,7 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t)){
     return hash_t;
 }
 
-void ht_resize(HashTable* ht, size_t new_capacity){
+void ht_resize(HashTable* ht, size_t new_capacity, size_t key_size, size_t value_size){
     // Create a new hash table with the new capacity
     HashTable* new_ht = ht_create(new_capacity, hash_func_str);
     if(!new_ht){
@@ -47,7 +46,7 @@ void ht_resize(HashTable* ht, size_t new_capacity){
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item* item = ht->buckets[i];
         while(item){
-            ht_insert(new_ht, item->key, item->val);
+            ht_insert(new_ht, item->key, key_size, item->val, value_size);
             Ht_Item* next = item->next;
             free(item->key);
             free(item->val);
@@ -72,27 +71,28 @@ void ht_resize(HashTable* ht, size_t new_capacity){
     free(new_ht);
 }
 
-Ht_Item* ht_item_create(const void* key, const void* val){
+Ht_Item* ht_item_create(const void* key, size_t key_size, const void* val, size_t val_size){
     Ht_Item* new_item = (Ht_Item*)malloc(sizeof(Ht_Item));
     if(!new_item)
         return NULL;
 
-    uint32_t key_size_bytes = strlen((char*)key) + 1;
-    new_item->key = malloc(key_size_bytes);
+    new_item->key = malloc(key_size);
     if(!new_item->key){
         free(new_item);
         return NULL;
     }
 
-    (void)memcpy(new_item->key, key, key_size_bytes);
+    (void)memcpy(new_item->key, key, key_size);
 
     // Or just do strdup for strings
-    new_item->val = strdup((const char*)val);
+    new_item->val = malloc(val_size);
     if(!new_item->val){
         free(new_item->key);
         free(new_item);
         return NULL;
     }
+
+    (void)memcpy(new_item->val, val, val_size);
 
     new_item->next = NULL;
     return new_item;
@@ -107,12 +107,12 @@ void handle_collision_chaining(HashTable* ht, Ht_Item* item, const void* val){
 }
 
 // Key as a string, value as a string
-void ht_insert(HashTable* ht, const void* key, const void* val){
+void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val, size_t val_size){
     size_t idx = ht->hash_func(key, ht->capacity);
     
     // Resizing, the threshold being 0.7
     if(ht->load_factor > THRESHOLD){
-        ht_resize(ht, ht->capacity * 2);
+        ht_resize(ht, ht->capacity * 2, key_size, val_size);
         idx = ht->hash_func(key, ht->capacity);
     }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
@@ -129,7 +129,7 @@ void ht_insert(HashTable* ht, const void* key, const void* val){
         curr_item = &(*curr_item)->next;
     }
 
-    *curr_item = ht_item_create(key, val);
+    *curr_item = ht_item_create(key, key_size, val, val_size);
     ht->size++;
 }
 
@@ -247,7 +247,7 @@ void ht_free(HashTable** ht){
 
 // PRINTING!!
 
-void print_ht(HashTable* ht, PrintHelper printHasht){
+void ht_print(HashTable* ht, PrintHelper printHasht){
     for(size_t hash = 0; hash < ht->capacity; ++hash){
         Ht_Item* item = ht->buckets[hash];
         if(item){
@@ -288,7 +288,6 @@ void printHashTableInfo(HashTable* ht){
 }
 
 // Parsing
-
 void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     FILE* m_file = fopen(file_name, "r");
     if(!m_file){
@@ -312,7 +311,8 @@ void parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
         }
         val[firstAlpha + 1] = '\0';
 
-        ht_insert(ht, key, val);
+
+        ht_insert(ht, key, strlen(key) + 1, val, strlen(val) + 1);
     }
 
     fclose(m_file);
