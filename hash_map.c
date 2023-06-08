@@ -137,6 +137,7 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
 
         // Key doesn't exist, just create a new one
         Ht_Item* new_item = ht_item_create(key, key_size, val, val_size);
+        new_item->next = ht->buckets[idx];
         ht->buckets[idx] = new_item;
         ht->size++;
     }else if(ht->coll_resolution == LINEAR_PROBING){
