@@ -8,7 +8,8 @@
 #include <stdbool.h>
 
 #define CAPACITY 100 // Table Size
-#define THRESHOLD 0.7f
+#define CHAINING_THRESHOLD 0.7f
+#define LP_THRESHOLD 0.45f
 
 // *FOR PERFORMANCE TESTING
 

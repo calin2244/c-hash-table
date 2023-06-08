@@ -44,7 +44,6 @@ void ht_print(HashTable* ht, PrintHelper printHasht){
                 (void)printf("-----------------------\nChained with: \n");
                 item = item->next;
                 while(item){
-                    
                     (void)printf("[%s: %s]", (char*)item->key, (char*)item->val);
                     item = item->next;
                     if(item)
@@ -121,4 +120,25 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     }
 
     fclose(m_file);
+}
+
+void printItemInfo(Ht_Item* item){
+    if(item){
+        printf("%s: %s\n", (char*)item->key, (char*)item->val);
+    }
+}
+
+void ht_print_perfomance_stats(HashTable* ht, int argc, char* argv[]){
+    if(argc > 1 && strcmp(argv[1], "stats") == 0){
+        // To output the chain, traverse the maxChainNode as a simple linked list
+        Ht_Item* maxChainNode = ht->buckets[maximumChainLength(ht).hashOfMaxChain]; 
+        (void)printf("Maximum Length Chain Node: ");
+        printItemInfo(maxChainNode);
+
+        // Time Performances
+        printHashTableInfo(ht);
+    }
+    else if(argc > 1 && strcmp(argv[1], "print") == 0){
+        ht_print(ht, print_string_string);
+    }
 }

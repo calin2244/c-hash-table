@@ -117,11 +117,11 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
     // Resizing, the threshold being 0.7
     // When working with linear probing, there will be a lot more clustering
     // so the THRESHOLD for linear-probing HashTable will be 0.4
-    if(ht->load_factor > THRESHOLD && ht->coll_resolution == CHAINING){
+    if(ht->coll_resolution >= CHAINING && ht->load_factor > CHAINING_THRESHOLD){
         ht_resize(ht, ht->capacity * 2, key_size, val_size);
         idx = ht->hash_func(key, ht->capacity);
     }
-    else if(ht->load_factor >= 0.4f && ht->coll_resolution == LINEAR_PROBING){
+    else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= LP_THRESHOLD){
         ht_resize(ht, ht->capacity * 2, key_size, val_size);
         idx = ht->hash_func(key, ht->capacity);
     }
@@ -148,12 +148,18 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
         ht->size++;
     }else if(ht->coll_resolution == LINEAR_PROBING){
         size_t initial_idx = idx;
-        while(ht->buckets[idx])
+        while(ht->buckets[idx]){
+            if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0)
+                return;
+
             idx = (idx + 1) % ht->capacity;
 
-        if(initial_idx != idx)
-            ht->collisions++;
-
+            if(idx == initial_idx){
+                ht->collisions++;
+                return;
+            }
+        }
+                    
         ht->buckets[idx] = ht_item_create(key, key_size, val, val_size);
         ht->size++;
     }
