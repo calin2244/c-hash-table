@@ -115,7 +115,13 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
     size_t idx = ht->hash_func(key, ht->capacity);
     
     // Resizing, the threshold being 0.7
-    if(ht->load_factor > THRESHOLD){
+    // When working with linear probing, there will be a lot more clustering
+    // so the THRESHOLD for linear-probing HashTable will be 0.4
+    if(ht->load_factor > THRESHOLD && ht->coll_resolution == CHAINING){
+        ht_resize(ht, ht->capacity * 2, key_size, val_size);
+        idx = ht->hash_func(key, ht->capacity);
+    }
+    else if(ht->load_factor >= 0.4f && ht->coll_resolution == LINEAR_PROBING){
         ht_resize(ht, ht->capacity * 2, key_size, val_size);
         idx = ht->hash_func(key, ht->capacity);
     }
@@ -154,16 +160,33 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
 
 bool ht_has_key(const HashTable* ht, const void* key){
     size_t idx = ht->hash_func(key, ht->capacity);
-    Ht_Item* item = ht->buckets[idx];
+    
 
-    while(item){
-        if (strcmp((const char*)item->key, (const char*)key) == 0){
-            return true; // Key found
+    if(ht->coll_resolution == CHAINING){
+        Ht_Item* item = ht->buckets[idx];
+        while(item){
+            if(strcmp((const char*)item->key, (const char*)key) == 0){
+                return true; // Key found
+            }
+            item = item->next;
         }
-        item = item->next;
-    }
 
-    return false; // Key not found
+        return false; // Key not found
+    }else if(ht->coll_resolution == LINEAR_PROBING){
+        while(idx < ht->capacity){
+            Ht_Item* item = ht->buckets[idx];
+            if(item){
+                if(strcmp((const char*)item->key, (const char*)key) == 0)
+                    return true;
+            }
+            else return false;
+            
+            idx = (idx + 1) % ht->capacity;
+        }
+
+        // No key has been found
+        return false;
+    }
 }
 
 // Will let the user to free the memory
@@ -208,6 +231,7 @@ Ht_Item* ht_get_item(HashTable* ht, const void* key){
     return NULL;
 }
 
+// !TODO: ADD SUPPORT FOR MULTIPLE COLLISION RESOLUTIONS 
 void ht_modify_item(HashTable* ht, const void* key, const void* val){
     if(ht_has_key(ht, key)){
         Ht_Item* to_modify = ht_get_item(ht, key);
@@ -216,6 +240,7 @@ void ht_modify_item(HashTable* ht, const void* key, const void* val){
     }
 }
 
+// TODO: Make it compatible with Multiple Methods of Chaining
 // Not safe, it borrows the item // pointer to item
 // Assumes user won't free the memory
 void* ht_search(HashTable* ht, const void* key){
