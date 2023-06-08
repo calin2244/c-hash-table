@@ -1,5 +1,6 @@
 #include "hash_map.h"
 
+
 // Hash Functions
 size_t hash_func_str(const void* key, size_t capacity){
     size_t hash = 0xcbf29ce484222325; // FNV_offset_basis
@@ -12,17 +13,7 @@ size_t hash_func_str(const void* key, size_t capacity){
     return hash % capacity;
 }
 
-// Handling Collisions
-void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){
-    if(item->val){
-        free(item->val);
-        item->val = malloc(val_size);
-        memcpy(item->val, val, val_size);
-    }
-}
-
-//Hash Table Creation
-HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t), void(*handle_collision)(Ht_Item*, const void* val, size_t val_size)){
+HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t), CollisionResolution coll_res){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
 
     if(!hash_t){ // malloc failed
@@ -41,13 +32,13 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t), v
     }
 
     hash_t->hash_func = hash_func;
-    hash_t->handle_collision = handle_collision;
+    hash_t->coll_resolution = coll_res;
     return hash_t;
 }
 
 void ht_resize(HashTable* ht, size_t new_capacity, size_t key_size, size_t value_size){
     // Create a new hash table with the new capacity
-    HashTable* new_ht = ht_create(new_capacity, ht->hash_func, ht->handle_collision);
+    HashTable* new_ht = ht_create(new_capacity, ht->hash_func, ht->coll_resolution);
     if(!new_ht){
         return;
     }
@@ -108,6 +99,17 @@ Ht_Item* ht_item_create(const void* key, size_t key_size, const void* val, size_
     return new_item;
 }
 
+void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){
+    if(item->val){
+        if(strcmp((char*)item->val, (char*)val) == 0)
+            return;
+
+        free(item->val);
+        item->val = malloc(val_size);
+        (void)memcpy(item->val, val, val_size);
+    }
+}
+
 // Key as a string, value as a string
 void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val, size_t val_size){
     size_t idx = ht->hash_func(key, ht->capacity);
@@ -119,23 +121,34 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
     }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
 
-    Ht_Item** curr_item = &ht->buckets[idx];
+    Ht_Item* curr_item = ht->buckets[idx];
     
-    while(*curr_item){
-        if(strcmp((char*)(*curr_item)->key, (char*)key) == 0){
-            
-            // Handling Collisions using a Custom Function(Line Probing / Chaining)
-            ht->handle_collision(*curr_item, val, val_size);
-            ht->collisions++;
-            return;
+    if(ht->coll_resolution == CHAINING){
+        while(curr_item){
+            if(strcmp((char*)curr_item->key, (char*)key) == 0){
+                handle_collision_chaining(curr_item, val, val_size);
+                ht->collisions++;
+                return;
+            }
+
+            // Pointing to the next item in the list, not destroying the linkage
+            curr_item = curr_item->next;
         }
 
-        // Pointing to the next item in the list, not destroying the linkage
-        curr_item = &(*curr_item)->next;
-    }
+        // Key doesn't exist, just create a new one
+        Ht_Item* new_item = ht_item_create(key, key_size, val, val_size);
+        ht->buckets[idx] = new_item;
+        ht->size++;
+    }else if(ht->coll_resolution == LINEAR_PROBING){
+        size_t initial_idx = idx;
+        while(ht->buckets[idx])
+            idx = (idx + 1) % ht->capacity;
 
-    *curr_item = ht_item_create(key, key_size, val, val_size);
-    ht->size++;
+        ht->collisions = initial_idx != idx ? ht->collisions += 1 : ht->collisions;
+
+        ht->buckets[idx] = ht_item_create(key, key_size, val, val_size);
+        ht->size++;
+    }
 }
 
 bool ht_has_key(const HashTable* ht, const void* key){
@@ -222,6 +235,7 @@ void* ht_search(HashTable* ht, const void* key){
 }
 
 // FREEING!
+
 void free_ht_item(Ht_Item** item){
     if(*item){
         free((*item)->key);
