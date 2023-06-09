@@ -152,12 +152,12 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
             if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0)
                 return;
 
-            idx = (idx + 1) % ht->capacity;
-
             if(idx == initial_idx){
                 ht->collisions++;
                 return;
             }
+
+            idx = (idx + 1) % ht->capacity;
         }
                     
         ht->buckets[idx] = ht_item_create(key, key_size, val, val_size);
@@ -197,6 +197,7 @@ bool ht_has_key(const HashTable* ht, const void* key){
     return false;
 }
 
+// TODO: Implement the other collision methods
 // Will let the user to free the memory
 Ht_Item* ht_remove(HashTable* ht, const void* key) {
     size_t idx = ht->hash_func(key, ht->capacity);
@@ -220,24 +221,34 @@ Ht_Item* ht_remove(HashTable* ht, const void* key) {
     return NULL;
 }
 
-Ht_Item* ht_get_item(HashTable* ht, const void* key){
+Ht_Item* ht_get_item(HashTable* ht, const void* key) {
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item* curr_item = ht->buckets[idx];
 
-    if(!curr_item){
-        return NULL;
-    }else{
-        while(curr_item){
-            if(strcmp((char*)curr_item->key, (char*)key) == 0){
+    if (ht->coll_resolution == CHAINING) {
+        while (curr_item) {
+            if (strcmp((char*)curr_item->key, (char*)key) == 0) {
                 return curr_item;
             }
-
             curr_item = curr_item->next;
+        }
+    } else if (ht->coll_resolution == LINEAR_PROBING) {
+        size_t start_idx = idx;
+        while (curr_item) {
+            if (strcmp((char*)curr_item->key, (char*)key) == 0) {
+                return curr_item;
+            }
+            idx = (idx + 1) % ht->capacity;
+            if (idx == start_idx) {
+                break; // Reached the starting index, no match found
+            }
+            curr_item = ht->buckets[idx];
         }
     }
 
-    return NULL;
+    return NULL; // Key not found
 }
+
 
 // !TODO: ADD SUPPORT FOR MULTIPLE COLLISION RESOLUTIONS 
 void ht_modify_item(HashTable* ht, const void* key, const void* val){
@@ -269,7 +280,6 @@ void* ht_search(HashTable* ht, const void* key){
 }
 
 // FREEING!
-
 void free_ht_item(Ht_Item** item){
     if(*item){
         free((*item)->key);
