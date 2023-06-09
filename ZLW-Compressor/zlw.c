@@ -1,15 +1,14 @@
 #include <stdio.h>
 #include "../src/hash_map.h"
 #include "../src/hash_utils.h"
-#include "limits.h"
 
 #define VAL_BYTES 4
-#define INITIAL_FR 1
+#define BIT 8
 
-void print_str_int(size_t hash, const void* key, const void* val){
-    hash = 0;
-    printf("Key: %c, %ld\n", *(char*)key, *(size_t*)val);
-}
+// void print_str_int(size_t hash, const void* key, const void* val){
+//     hash = 0;
+//     printf("Key: %c, %ld\n", *(char*)key, *(size_t*)val);
+// }
 
 void print_keys(HashTable* ht){
     for(size_t i = 0; i < ht->capacity; ++i){
@@ -57,7 +56,7 @@ CompressedArray zlw_encoding(HashTable* ht, const char* query){
         ht_insert(ht, tempKey, strlen(tempKey) + 1, &i, sizeof(size_t));
     }
 
-    char p[256] = "", c[256] = "";
+    char p[108] = "", c[108] = "";
     p[0] = query[0];
     int code = 256;
     for(size_t i = 0; i < strlen(query); ++i){
@@ -91,26 +90,34 @@ CompressedArray zlw_encoding(HashTable* ht, const char* query){
     CompressedArray arr;
     arr.size = pos;
     arr.buff = (int*)malloc(pos * sizeof(int));
-
     (void)memcpy(arr.buff, compressed_ar, pos * sizeof(int));
+    
     return arr;
 }
 
-
-int main(){
+int main(int argc, char* argv[]){
     HashTable* hash_t = ht_create(100, hash_func_str, LINEAR_PROBING);
-    const char* query = "WYS*WYGWYS*WYSWYSG";
+    char query[256];
+    if(argc > 1)
+        (void)strncpy(query, argv[1], strlen(argv[1]) + 1);
+    else{
+        (void)printf("Provide an input string!\n");
+        return -1;
+    }
 
     CompressedArray compressed = zlw_encoding(hash_t, query);
 
     for(size_t i = 0; i < compressed.size; ++i)
         printf("%d ", compressed.buff[i]);
 
-    printf("\nUncompressed Size: %ld\nCompressed size: %ld\n", CHAR_BIT * sizeof(query), CHAR_BIT * sizeof(compressed.buff));
+    size_t uncompressed_size = BIT * strlen(query);
+    size_t compressed_size = compressed.size * BIT * sizeof(int);
+    float compression_ratio = ((float)compressed_size / (float)uncompressed_size) * 100;
 
-    // print_keys(hash_t);
-    // ht_print(hash_t, print_str_int);
-    // printHashTableInfo(hash_t);
+    (void)printf("\nUncompressed Size: %ld\nCompressed size: %ld\n", uncompressed_size, compressed_size);
+    (void)printf("Compression Ratio: %.2f%%\n", compression_ratio);
+
+    free(compressed.buff);
     ht_free(&hash_t);
     return 0;
 }
