@@ -23,7 +23,7 @@
 typedef enum{
     CHAINING = 0,
     LINEAR_PROBING,
-    QUADRATIC_PROBING
+    QUADRATIC_PROBING // TODO: Actually implement this
 }CollisionResolution;
 
 typedef struct Ht_Item{
