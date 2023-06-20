@@ -99,7 +99,7 @@ Ht_Item* ht_item_create(const void* key, size_t key_size, const void* val, size_
     return new_item;
 }
 
-void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){
+void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){    
     if(item->val){
         if(strcmp((char*)item->val, (char*)val) == 0)
             return;
@@ -114,9 +114,9 @@ void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){
 void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val, size_t val_size){
     size_t idx = ht->hash_func(key, ht->capacity);
     
-    // Resizing, the threshold being 0.7
+    // Resizing, the threshold being 0.7 and 0.45
     // When working with linear probing, there will be a lot more clustering
-    // so the THRESHOLD for linear-probing HashTable will be 0.4
+    // so the THRESHOLD for linear-probing HashTable will be a little lower 
     if(ht->coll_resolution >= CHAINING && ht->load_factor > CHAINING_THRESHOLD){
         ht_resize(ht, ht->capacity * 2, key_size, val_size);
         idx = ht->hash_func(key, ht->capacity);
@@ -129,6 +129,7 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
 
     Ht_Item* curr_item = ht->buckets[idx];
     
+    //TODO: Update correctly the number of collisions
     if(ht->coll_resolution == CHAINING){
         while(curr_item){
             if(strcmp((char*)curr_item->key, (char*)key) == 0){
@@ -152,12 +153,12 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
             if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0)
                 return;
 
+            idx = (idx + 1) % ht->capacity;
+            
             if(idx == initial_idx){
                 ht->collisions++;
                 return;
             }
-
-            idx = (idx + 1) % ht->capacity;
         }
                     
         ht->buckets[idx] = ht_item_create(key, key_size, val, val_size);
@@ -221,27 +222,30 @@ Ht_Item* ht_remove(HashTable* ht, const void* key) {
     return NULL;
 }
 
-Ht_Item* ht_get_item(HashTable* ht, const void* key) {
+Ht_Item* ht_get_item(HashTable* ht, const void* key){
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item* curr_item = ht->buckets[idx];
 
-    if (ht->coll_resolution == CHAINING) {
+    if(ht->coll_resolution == CHAINING){
         while (curr_item) {
             if (strcmp((char*)curr_item->key, (char*)key) == 0) {
                 return curr_item;
             }
             curr_item = curr_item->next;
         }
-    } else if (ht->coll_resolution == LINEAR_PROBING) {
+    }else if(ht->coll_resolution == LINEAR_PROBING){
         size_t start_idx = idx;
         while (curr_item) {
             if (strcmp((char*)curr_item->key, (char*)key) == 0) {
                 return curr_item;
             }
+
             idx = (idx + 1) % ht->capacity;
+
             if (idx == start_idx) {
                 break; // Reached the starting index, no match found
             }
+
             curr_item = ht->buckets[idx];
         }
     }
