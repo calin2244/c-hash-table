@@ -36,7 +36,7 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t), C
     return hash_t;
 }
 
-void ht_resize(HashTable* ht, size_t new_capacity, size_t key_size, size_t value_size){
+void ht_resize(HashTable* ht, size_t new_capacity, size_t value_size){
     // Create a new hash table with the new capacity
     HashTable* new_ht = ht_create(new_capacity, ht->hash_func, ht->coll_resolution);
     if(!new_ht){
@@ -47,7 +47,7 @@ void ht_resize(HashTable* ht, size_t new_capacity, size_t key_size, size_t value
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item* item = ht->buckets[i];
         while(item){
-            ht_insert(new_ht, item->key, key_size, item->val, value_size);
+            ht_insert(new_ht, item->key, item->val, value_size);
             Ht_Item* next = item->next;
             free(item->key);
             free(item->val);
@@ -72,18 +72,18 @@ void ht_resize(HashTable* ht, size_t new_capacity, size_t key_size, size_t value
     free(new_ht);
 }
 
-Ht_Item* ht_item_create(const void* key, size_t key_size, const void* val, size_t val_size){
+Ht_Item* ht_item_create(const void* key, const void* val, size_t val_size){
     Ht_Item* new_item = (Ht_Item*)malloc(sizeof(Ht_Item));
     if(!new_item)
         return NULL;
 
-    new_item->key = malloc(key_size);
+    new_item->key = malloc(strlen((char*)key) + 1);
     if(!new_item->key){
         free(new_item);
         return NULL;
     }
 
-    (void)memcpy(new_item->key, key, key_size);
+    (void)memcpy(new_item->key, key, strlen((char*)key) + 1);
 
     // Or just do strdup for strings
     new_item->val = malloc(val_size);
@@ -111,18 +111,18 @@ void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){
 }
 
 // Key as a string, value as a string
-void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val, size_t val_size){
+void ht_insert(HashTable* ht, const void* key, const void* val, size_t val_size){
     size_t idx = ht->hash_func(key, ht->capacity);
     
     // Resizing, the threshold being 0.7 and 0.45
     // When working with linear probing, there will be a lot more clustering
     // so the THRESHOLD for linear-probing HashTable will be a little lower 
     if(ht->coll_resolution >= CHAINING && ht->load_factor > CHAINING_THRESHOLD){
-        ht_resize(ht, ht->capacity * 2, key_size, val_size);
+        ht_resize(ht, ht->capacity * 2, val_size);
         idx = ht->hash_func(key, ht->capacity);
     }
     else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= LP_THRESHOLD){
-        ht_resize(ht, ht->capacity * 2, key_size, val_size);
+        ht_resize(ht, ht->capacity * 2, val_size);
         idx = ht->hash_func(key, ht->capacity);
     }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
@@ -143,15 +143,23 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
         }
 
         // Key doesn't exist, just create a new one
-        Ht_Item* new_item = ht_item_create(key, key_size, val, val_size);
+        Ht_Item* new_item = ht_item_create(key, val, val_size);
         new_item->next = ht->buckets[idx];
         ht->buckets[idx] = new_item;
         ht->size++;
     }else if(ht->coll_resolution == LINEAR_PROBING){
         size_t initial_idx = idx;
         while(ht->buckets[idx]){
-            if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0)
+            if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
+                // Update the VALUE of the KEY
+                Ht_Item* item = ht->buckets[idx];
+                if(item->val)
+                    free(item->val);
+
+                item->val = strdup((char*)val);
+
                 return;
+            }
 
             idx = (idx + 1) % ht->capacity;
             
@@ -161,7 +169,7 @@ void ht_insert(HashTable* ht, const void* key, size_t key_size, const void* val,
             }
         }
                     
-        ht->buckets[idx] = ht_item_create(key, key_size, val, val_size);
+        ht->buckets[idx] = ht_item_create(key, val, val_size);
         ht->size++;
     }
 }
@@ -199,28 +207,61 @@ bool ht_has_key(const HashTable* ht, const void* key){
 }
 
 // TODO: Implement the other collision methods
-// Will let the user to free the memory
-Ht_Item* ht_remove(HashTable* ht, const void* key) {
+/*  
+    *UPDATE: The function will now free the memory, it's safer
+    * It returns 1 if it was able to find the item and remove it
+    * else it returns 0 (no item with that key was found)
+*/
+
+bool ht_remove(HashTable* ht, const void* key) {
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item** curr_item = &ht->buckets[idx];
 
-    if(*curr_item == NULL){
-        return NULL;
-    }else{
+    if(ht->coll_resolution == CHAINING){
+        
+        if(*curr_item == NULL)
+            return false;
+        
         while(*curr_item){
+            // This will act as a PREV pointer
             Ht_Item* curr = *curr_item;
             if(strcmp((char*)curr->key, (char*)key) == 0){
                 *curr_item = (*curr_item)->next;
                 ht->size--;
-                return curr;
+                
+                free_ht_item(curr);
+                curr = NULL;
+                // Return, we have deleted the item
+                return true;
             }
 
             curr_item = &(*curr_item)->next;
         }
     }
+    else if(ht->coll_resolution == LINEAR_PROBING){
+        while(*curr_item){
+            if(strcmp((char*)(*curr_item)->key, (char*)key) == 0){
+                free_ht_item(*curr_item);
+                *curr_item = NULL;
 
-    return NULL;
+                return true;
+            }
+
+            idx = (idx + 1) % ht->capacity;
+
+            curr_item = &ht->buckets[idx];
+        }
+
+        return false;
+    }
+
+    return false;
 }
+
+/*
+    * Not safe, it borrows the item // pointer to item
+    * Assumes user won't free the memory
+*/
 
 Ht_Item* ht_get_item(HashTable* ht, const void* key){
     size_t idx = ht->hash_func(key, ht->capacity);
@@ -263,37 +304,20 @@ void ht_modify_item(HashTable* ht, const void* key, const void* val){
     }
 }
 
-// TODO: Make it compatible with Multiple Methods of Chaining
-// Not safe, it borrows the item // pointer to item
-// Assumes user won't free the memory
-void* ht_search(HashTable* ht, const void* key){
-    size_t idx = ht->hash_func(key, ht->capacity);
-    Ht_Item* curr_item = ht->buckets[idx];
-
-    // In case there is chaining
-    while(curr_item){
-        if(strcmp((char*)curr_item->key, (char*)key) == 0)
-            return curr_item->val;
-        
-        curr_item = curr_item->next;
-    }
-
-    // if curr_item is NULL
-    return NULL;
-
-}
-
 // FREEING!
-void free_ht_item(Ht_Item** item){
-    if(*item){
-        free((*item)->key);
-        free((*item)->val);
-        free(*item);
-        *item = NULL;
+void free_ht_item(Ht_Item* item){
+    if(item){
+        if(item->key)
+            free(item->key);
+        
+        if(item->val)
+            free(item->val);
+        
+        free(item);
     }
 }
 
-void ht_free(HashTable** ht){
+void free_ht(HashTable** ht){
     for (size_t i = 0; i < (*ht)->capacity; ++i){
         Ht_Item* item = (*ht)->buckets[i];
         while(item){

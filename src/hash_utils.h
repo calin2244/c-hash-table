@@ -98,7 +98,7 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
         }
         val[firstAlpha + 1] = '\0';
 
-        ht_insert(ht, key, strlen(key) + 1, val, strlen(val) + 1);
+        ht_insert(ht, key, val, strlen(val) + 1);
     }
 
     fclose(m_file);
@@ -115,8 +115,7 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     // Removing every entry in the hash table by parsing the file
     while(fgets(line_buffer, sizeof(line_buffer), m_file)){
         const char* key = strtok(line_buffer, " ");
-        Ht_Item* remo = ht_remove(ht, key); 
-        free_ht_item(&remo);
+        ht_remove(ht, key); 
     }
 
     fclose(m_file);
