@@ -1,6 +1,7 @@
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
 #include "hash_map.h"
+#include "string.h"
 
 typedef struct{
     size_t maxChainLen;
@@ -82,25 +83,32 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
         return -1;
     }
 
-    char line_buffer[16];
-    char* key = NULL;
-    char* val = NULL;
-    while(fgets(line_buffer, sizeof(line_buffer), m_file)){
-        key = strtok(line_buffer, " ");
-        val = strtok(NULL, "\n");
+    char* line_buff = NULL;
+    size_t line_capacity = 0;
+    size_t line_length; 
 
-        // right-trim the value
-        size_t firstAlpha = strlen(val) - 1;
-        while(firstAlpha > 0){
-            if(val[firstAlpha] == '\n' || val[firstAlpha] == ' ' || val[firstAlpha] == '\r')
-                firstAlpha--;
-            else break;
+    while ((line_length = getline(&line_buff, &line_capacity, m_file)) != -1) {        
+        char* key = strtok(line_buff, " ");
+        char* val = strtok(NULL, "\n");
+
+        if(key && val){
+            //Right-Trim
+            size_t val_size = strlen(val);
+            while(val_size && (
+            val[val_size - 1] == '\n' || 
+            val[val_size - 1] == ' ' || 
+            val[val_size - 1] == '\r')){
+                val[val_size - 1] = '\0';
+                val_size--;
+            }
+
+            ht_insert(ht, key, val, val_size + 1);
         }
-        val[firstAlpha + 1] = '\0';
 
-        ht_insert(ht, key, val, strlen(val) + 1);
+        // line_length = getline(&line_buff, &line_capacity, m_file);
     }
 
+    free(line_buff);
     fclose(m_file);
 
     // Parsing from file succeeded!!

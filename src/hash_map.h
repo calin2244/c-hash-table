@@ -38,7 +38,7 @@ typedef enum{
 */
 
 typedef struct Ht_Item{
-    void* key;
+    char* key;
     void* val;
     struct Ht_Item* next;
 }Ht_Item;
@@ -49,17 +49,18 @@ typedef struct HashTable{
     int collisions;
     float load_factor;
     Ht_Item** buckets;
-    size_t (*hash_func)(const void*, size_t);
+    size_t (*hash_func)(const char*, size_t);
     CollisionResolution coll_resolution;
 }HashTable;
 
 typedef void (*PrintHelper)(size_t, const void*, const void*);
 
-size_t hash_func_str(const void* key, size_t capacity);
-HashTable* ht_create(size_t capacity, size_t (*hash_func)(const void*, size_t), CollisionResolution coll_res);
+size_t hash_func(const char* key, size_t capacity);
+size_t double_hash_func(const char* key, size_t capacity);
+HashTable* ht_create(size_t capacity, size_t (*hash_func)(const char*, size_t), CollisionResolution coll_res);
 void ht_resize(HashTable* ht, size_t new_capacity, size_t value_size);
 void free_ht(HashTable** ht);
-void ht_insert(HashTable* ht, const void* key, const void* val, size_t val_size);
+void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size);
 bool ht_has_key(const HashTable* ht, const void* key);
 bool ht_remove(HashTable* ht, const void* key);
 Ht_Item* ht_get_item(HashTable* ht, const void* key);

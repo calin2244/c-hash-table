@@ -1,19 +1,41 @@
 #include "hash_map.h"
 
 
-// Hash Functions
-size_t hash_func_str(const void* key, size_t capacity){
+/*
+    * Hash Functions!
+    * I've implemented below a normal hash function
+    * and a double hash one too
+    ! You can create your own hash function too!!
+    ? FNV stands for Fowler-Noll-Vo
+*/ 
+
+size_t hash_func(const char* key, size_t capacity){
     size_t hash = 0xcbf29ce484222325; // FNV_offset_basis
-    const char* str = (const char*)key;
-    while(*str){
-        hash ^= (uint8_t)*str++;
+    while(*key){
+        hash ^= (uint8_t)*key++;
         hash *= 0x100000001b3; // FNV_prime
     }
 
     return hash % capacity;
 }
 
-HashTable* ht_create(size_t capacity, size_t(*hash_func)(const void*, size_t), CollisionResolution coll_res){
+size_t double_hash_func(const char* key, size_t capacity){
+    size_t hash1 = hash_func(key, capacity);
+    size_t hash2 = 0xf3d7b4d88c356f19; 
+    
+    while(*key){
+        hash2 ^= (uint8_t)*key++;
+        hash2 *= 0x811C9DC5; // Another FNV_prime
+    }
+
+    return (hash1 + (hash2 % (capacity - 1))) % capacity;
+}
+
+// END OF HASHING
+
+
+
+HashTable* ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), CollisionResolution coll_res){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
 
     if(!hash_t){ // malloc failed
@@ -86,14 +108,14 @@ Ht_Item* ht_item_create(const void* key, const void* val, size_t val_size){
     (void)memcpy(new_item->key, key, strlen((char*)key) + 1);
 
     // Or just do strdup for strings
-    new_item->val = malloc(val_size);
+    new_item->val = strdup(val);
     if(!new_item->val){
         free(new_item->key);
         free(new_item);
         return NULL;
     }
 
-    (void)memcpy(new_item->val, val, val_size);
+    // (void)memcpy(new_item->val, val, val_size);
 
     new_item->next = NULL;
     return new_item;
@@ -111,7 +133,7 @@ void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){
 }
 
 // Key as a string, value as a string
-void ht_insert(HashTable* ht, const void* key, const void* val, size_t val_size){
+void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size){
     size_t idx = ht->hash_func(key, ht->capacity);
     
     // Resizing, the threshold being 0.7 and 0.45
@@ -262,7 +284,6 @@ bool ht_remove(HashTable* ht, const void* key) {
     * Not safe, it borrows the item // pointer to item
     * Assumes user won't free the memory
 */
-
 Ht_Item* ht_get_item(HashTable* ht, const void* key){
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item* curr_item = ht->buckets[idx];
