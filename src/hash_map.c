@@ -115,6 +115,7 @@ Ht_Item* ht_item_create(const void* key, const void* val, size_t val_size){
         return NULL;
     }
 
+    // TODO: Look more into this issue(invalid read size)
     // (void)memcpy(new_item->val, val, val_size);
 
     new_item->next = NULL;
