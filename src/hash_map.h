@@ -28,9 +28,8 @@ typedef enum{
 
 /* 
     *NOTES!!
-    *   Even though the type of the key is VOID*
-    * it is currently working only with char*
-    * as template metaprogramming isn't a thing in C
+    * KEYs currently work only as char*,
+    * because template metaprogramming isn't a thing in C
     * it's hard to know the type of the key beforehand
     * and it would require a more messy implementation to do that.
     * If you need numbers as keys, just convert your integers
@@ -40,6 +39,7 @@ typedef enum{
 typedef struct Ht_Item{
     char* key;
     void* val;
+    size_t val_size;
     struct Ht_Item* next;
 }Ht_Item;
 
@@ -58,7 +58,7 @@ typedef void (*PrintHelper)(size_t, const void*, const void*);
 size_t hash_func(const char* key, size_t capacity);
 size_t double_hash_func(const char* key, size_t capacity);
 HashTable* ht_create(size_t capacity, size_t (*hash_func)(const char*, size_t), CollisionResolution coll_res);
-void ht_resize(HashTable* ht, size_t new_capacity, size_t value_size);
+void ht_resize(HashTable* ht, size_t new_capacity);
 void free_ht(HashTable** ht);
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size);
 bool ht_has_key(const HashTable* ht, const void* key);

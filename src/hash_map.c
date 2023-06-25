@@ -33,8 +33,6 @@ size_t double_hash_func(const char* key, size_t capacity){
 
 // END OF HASHING
 
-
-
 HashTable* ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), CollisionResolution coll_res){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
 
@@ -58,7 +56,7 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), C
     return hash_t;
 }
 
-void ht_resize(HashTable* ht, size_t new_capacity, size_t value_size){
+void ht_resize(HashTable* ht, size_t new_capacity){
     // Create a new hash table with the new capacity
     HashTable* new_ht = ht_create(new_capacity, ht->hash_func, ht->coll_resolution);
     if(!new_ht){
@@ -69,7 +67,7 @@ void ht_resize(HashTable* ht, size_t new_capacity, size_t value_size){
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item* item = ht->buckets[i];
         while(item){
-            ht_insert(new_ht, item->key, item->val, value_size);
+            ht_insert(new_ht, item->key, item->val, item->val_size);
             Ht_Item* next = item->next;
             free(item->key);
             free(item->val);
@@ -105,30 +103,33 @@ Ht_Item* ht_item_create(const void* key, const void* val, size_t val_size){
         return NULL;
     }
 
-    (void)memcpy(new_item->key, key, strlen((char*)key) + 1);
+    (void)strncpy(new_item->key, key, strlen(key) + 1);
+    // printf("STRLEN VAL: %ld, VAL_SIZE: %ld\n", strlen(val), val_size);
 
     // Or just do strdup for strings
-    new_item->val = strdup(val);
+    new_item->val = malloc(val_size + 1);
     if(!new_item->val){
         free(new_item->key);
         free(new_item);
         return NULL;
     }
 
-    // TODO: Look more into this issue(invalid read size)
-    // (void)memcpy(new_item->val, val, val_size);
+    (void)memcpy(new_item->val, val, val_size);
 
+    new_item->val_size = val_size;
     new_item->next = NULL;
     return new_item;
 }
 
 void handle_collision_chaining(Ht_Item* item, const void* val, size_t val_size){    
     if(item->val){
-        if(strcmp((char*)item->val, (char*)val) == 0)
-            return;
+
+        // *This line will only work with strings as the key of the HashTable :/
+        // if(strcmp((char*)item->val, (char*)val) == 0)
+        //     return;
 
         free(item->val);
-        item->val = malloc(val_size);
+        item->val = malloc(val_size + 1);
         (void)memcpy(item->val, val, val_size);
     }
 }
@@ -141,11 +142,11 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
     // When working with linear probing, there will be a lot more clustering
     // so the THRESHOLD for linear-probing HashTable will be a little lower 
     if(ht->coll_resolution >= CHAINING && ht->load_factor > CHAINING_THRESHOLD){
-        ht_resize(ht, ht->capacity * 2, val_size);
+        ht_resize(ht, ht->capacity * 2);
         idx = ht->hash_func(key, ht->capacity);
     }
     else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= LP_THRESHOLD){
-        ht_resize(ht, ht->capacity * 2, val_size);
+        ht_resize(ht, ht->capacity * 2);
         idx = ht->hash_func(key, ht->capacity);
     }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
@@ -179,6 +180,7 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
                 if(item->val)
                     free(item->val);
 
+                // TODO: do malloc for void*, not char*
                 item->val = strdup((char*)val);
 
                 return;
