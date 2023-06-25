@@ -87,7 +87,7 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     size_t line_capacity = 0;
     size_t line_length; 
 
-    while ((line_length = getline(&line_buff, &line_capacity, m_file)) != -1) {        
+    while((line_length = getline(&line_buff, &line_capacity, m_file)) != -1){        
         char* key = strtok(line_buff, " ");
         char* val = strtok(NULL, "\n");
 
@@ -102,10 +102,8 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
                 val_size--;
             }
 
-            ht_insert(ht, key, val, val_size + 1);
+            ht_insert(ht, key, val, strlen(val) + 1);
         }
-
-        // line_length = getline(&line_buff, &line_capacity, m_file);
     }
 
     free(line_buff);
@@ -129,18 +127,12 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     fclose(m_file);
 }
 
-void printItemInfo(Ht_Item* item){
-    if(item){
-        printf("%s: %s\n", (char*)item->key, (char*)item->val);
-    }
-}
-
 void ht_print_perfomance_stats(HashTable* ht, int argc, char* argv[]){
     if(argc > 1 && strcmp(argv[1], "stats") == 0){
         // To output the chain, traverse the maxChainNode as a simple linked list
         Ht_Item* maxChainNode = ht->buckets[maximumChainLength(ht).hashOfMaxChain]; 
-        (void)printf("Maximum Length Chain Node: ");
-        printItemInfo(maxChainNode);
+        (void)printf("\nMaximum Length Chain Node: ");
+        printf("%s: %s\n", (char*)maxChainNode->key, (char*)maxChainNode->val);
 
         // Time Performances
         printHashTableInfo(ht);
