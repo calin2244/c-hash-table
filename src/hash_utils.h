@@ -1,7 +1,8 @@
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
 #include "hash_map.h"
-#include "string.h"
+
+// int getline(char** lline, size_t* len, FILE* m_file);
 
 typedef struct{
     size_t maxChainLen;
@@ -85,7 +86,7 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
 
     char* line_buff = NULL;
     size_t line_capacity = 0;
-    size_t line_length; 
+    int line_length; 
 
     while((line_length = getline(&line_buff, &line_capacity, m_file)) != -1){        
         char* key = strtok(line_buff, " ");
@@ -102,7 +103,8 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
                 val_size--;
             }
 
-            ht_insert(ht, key, val, strlen(val) + 1);
+            if(strlen(val) > 1)
+                ht_insert(ht, key, val, strlen(val) + 1);
         }
     }
 
@@ -117,7 +119,7 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     FILE* m_file = fopen(file_name, "r");
     fseek(m_file, 0, SEEK_SET);
 
-    char line_buffer[16];
+    char line_buffer[108];
     // Removing every entry in the hash table by parsing the file
     while(fgets(line_buffer, sizeof(line_buffer), m_file)){
         const char* key = strtok(line_buffer, " ");
