@@ -9,7 +9,7 @@
     ? FNV stands for Fowler-Noll-Vo
 */ 
 
-size_t hash_func(const char* key, size_t capacity){
+size_t fnv_hash_func(const char* key, size_t capacity){
     size_t hash = 0xcbf29ce484222325; // FNV_offset_basis
     while(*key){
         hash ^= (uint8_t)*key++;
@@ -19,8 +19,8 @@ size_t hash_func(const char* key, size_t capacity){
     return hash % capacity;
 }
 
-size_t double_hash_func(const char* key, size_t capacity){
-    size_t hash1 = hash_func(key, capacity);
+size_t fnv_double_hash_func(const char* key, size_t capacity){
+    size_t hash1 = fnv_hash_func(key, capacity);
     size_t hash2 = 0xf3d7b4d88c356f19; 
     
     while(*key){
@@ -29,6 +29,28 @@ size_t double_hash_func(const char* key, size_t capacity){
     }
 
     return (hash1 + (hash2 % (capacity - 1))) % capacity;
+}
+
+/*
+    ! WARNING
+    * This hash function usually returns big hash values
+    * so resizings are going to happen a lot more often than usual
+    ? (Implemented for testing purposes)
+*/
+size_t jenkins_hash_func(const char* key, size_t capacity){
+    size_t hash = 0;
+    while(*key){
+        hash += (uint8_t)*key;
+        hash += ((uint16_t)*key << 10);
+        hash ^= ((uint8_t)*key >> 6);
+        key++;
+    }
+
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+
+    return hash % capacity;
 }
 
 // END OF HASHING
@@ -140,14 +162,15 @@ void handle_collision(Ht_Item* item, const void* val, size_t val_size){
 
 void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     Ht_Item* curr_item = ht->buckets[idx];
+    
     while(curr_item){
+        ht->collisions++;
+        
         if(strcmp((char*)curr_item->key, (char*)key) == 0){
             handle_collision(curr_item, val, val_size);
-            ht->collisions++;
             return;
         }
 
-        ht->collisions++;
         // Pointing to the next item in the list, not destroying the linkage
         curr_item = curr_item->next;
     }
@@ -161,11 +184,11 @@ void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const
 
 void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     while(ht->buckets[idx]){
+        ht->collisions++;
+        
         if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
             // Handle the collision
             handle_collision(ht->buckets[idx], val, val_size);
-            ht->collisions++;
-
             return;
         }
         
@@ -179,11 +202,12 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
 void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     size_t initial_idx = idx;
     uint16_t curr_power = 1;
+    printf("Init idx: %ld\n", initial_idx);
     while(ht->buckets[idx]){
+        ht->collisions++;
+
         if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
-            handle_collision(ht->buckets[idx], val, val_size);
-            ht->collisions++;
-            
+            handle_collision(ht->buckets[idx], val, val_size);            
             return;
         }
 
@@ -206,11 +230,11 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
         * so the THRESHOLD for linear-probing HashTable will be a little lower 
     */
     if(ht->coll_resolution == CHAINING && ht->load_factor > CHAINING_THRESHOLD){
-        ht_resize(ht, ht->capacity * 2);
+        ht_resize(ht, ht->capacity * INCREMENTAL_RESIZING + ht->capacity);
         idx = ht->hash_func(key, ht->capacity);
     }
     else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= OA_THRESHOLD){
-        ht_resize(ht, ht->capacity * 2);
+        ht_resize(ht, ht->capacity * INCREMENTAL_RESIZING + ht->capacity);
         idx = ht->hash_func(key, ht->capacity);
     }
 
@@ -241,7 +265,8 @@ bool ht_has_key(const HashTable* ht, const char* key){
             item = item->next;
         }
 
-        return false; // Key not found
+        // Key not found
+        return false; 
     }else if(ht->coll_resolution == LINEAR_PROBING){
         while(ht->buckets[idx]){
             Ht_Item* item = ht->buckets[idx];
@@ -253,6 +278,9 @@ bool ht_has_key(const HashTable* ht, const char* key){
         }
 
         // No key has been found
+        return false;
+    }else if(ht->coll_resolution == QUADRATIC_PROBING){
+        // to do
         return false;
     }
 
@@ -320,27 +348,27 @@ bool ht_remove(HashTable* ht, const char* key) {
     * Not safe, it borrows the item // pointer to item
     * Assumes user won't free the memory
 */
-Ht_Item* ht_get_item(HashTable* ht, const char* key){
+void* ht_get_item(HashTable* ht, const char* key){
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item* curr_item = ht->buckets[idx];
 
     if(ht->coll_resolution == CHAINING){
-        while (curr_item) {
-            if (strcmp((char*)curr_item->key, (char*)key) == 0) {
-                return curr_item;
+        while(curr_item){
+            if (strcmp(curr_item->key, key) == 0) {
+                return curr_item->val;
             }
             curr_item = curr_item->next;
         }
     }else if(ht->coll_resolution == LINEAR_PROBING){
         size_t start_idx = idx;
-        while (curr_item) {
-            if (strcmp((char*)curr_item->key, (char*)key) == 0) {
-                return curr_item;
+        while(curr_item){
+            if(strcmp((char*)curr_item->key, (char*)key) == 0){
+                return curr_item->val;
             }
 
             idx = (idx + 1) % ht->capacity;
 
-            if (idx == start_idx) {
+            if(idx == start_idx){
                 break; // Reached the starting index, no match found
             }
 
@@ -370,7 +398,7 @@ void free_ht_item(Ht_Item* item){
 }
 
 void free_ht(HashTable** ht){
-    for (size_t i = 0; i < (*ht)->capacity; ++i){
+    for(size_t i = 0; i < (*ht)->capacity; ++i){
         Ht_Item* item = (*ht)->buckets[i];
         while(item){
             Ht_Item* next = item->next;
@@ -385,4 +413,18 @@ void free_ht(HashTable** ht){
     (*ht)->buckets = NULL;
     free(*ht);
     *ht = NULL;
+}
+
+void clear_ht(HashTable* ht){
+    for(size_t i = 0; i < ht->capacity; ++i){
+        Ht_Item** item = &ht->buckets[i];
+
+        // We iterate through each bucket(In case there is chaining)
+        while(*item){
+            Ht_Item* next = (*item)->next;
+            free_ht_item(*item);
+            *item = NULL;
+            *item = next;
+        }
+    }
 }

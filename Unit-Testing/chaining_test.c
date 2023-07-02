@@ -7,7 +7,7 @@
 #define OUTPUT_PATH "./Data(output)/chain_out.txt"
 
 int main(int argc, char* argv[]){
-    HashTable* hash_t = ht_create(13, hash_func_str, CHAINING);
+    HashTable* hash_t = ht_create(13, fnv_hash_func, CHAINING);
     HashIterator iterator = ht_iterator_create(hash_t);
     
     int result = parseFileAndPopulateHashTable(hash_t, ENTRIES_PATH);
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
     
     // Time Performances and Stats
     (void)printf("Total time to traverse Hash Table: %f\n", cpu_time_used);
-    ht_print_perfomance_stats(hash_t, argc, argv);
+    ht_print_perfomance_stats(hash_t, argc, argv, print_string_string);
 
     // Saving the Data from the Hash Table in a text file
     FILE* out = fopen(OUTPUT_PATH, "w");
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
 
     (void)fclose(out);
     parseFileAndRemoveEntries(hash_t, ENTRIES_PATH);
-    ht_free(&hash_t);
+    free_ht(&hash_t);
     return 0;
 }
 

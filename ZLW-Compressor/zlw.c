@@ -96,7 +96,7 @@ CompressedArray zlw_encoding(HashTable* ht, const char* query){
 }
 
 int main(int argc, char* argv[]){
-    HashTable* hash_t = ht_create(100, hash_func_str, LINEAR_PROBING);
+    HashTable* hash_t = ht_create(100, hash_func, LINEAR_PROBING);
     char query[256];
     if(argc > 1)
         (void)strncpy(query, argv[1], strlen(argv[1]) + 1);
@@ -118,6 +118,6 @@ int main(int argc, char* argv[]){
     (void)printf("Compression Ratio: %.2f%%\n", compression_ratio);
 
     free(compressed.buff);
-    ht_free(&hash_t);
+    free_ht(&hash_t);
     return 0;
 }

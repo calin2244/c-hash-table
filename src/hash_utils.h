@@ -1,6 +1,7 @@
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
 #include "hash_map.h"
+#include "getline.h"
 
 // int getline(char** lline, size_t* len, FILE* m_file);
 
@@ -35,8 +36,6 @@ pair maximumChainLength(HashTable* ht){
     return out;
 }
 
-typedef void (*PrintHelper)(size_t, const void*, const void*);
-
 void ht_print(HashTable* ht, PrintHelper printHasht){
     for(size_t hash = 0; hash < ht->capacity; ++hash){
         Ht_Item* item = ht->buckets[hash];
@@ -57,11 +56,11 @@ void ht_print(HashTable* ht, PrintHelper printHasht){
     }
 }
 
-void print_string_string(size_t hash, const void* key, const void* val){
+void print_string_string(size_t hash, const char* key, const void* val){
     printf("Index:%li, Key: %s, Value: %s\n", hash, (char*)key, (char*)val);
 }
 
-void printHashTableInfo(HashTable* ht){
+void ht_print_time_performances(HashTable* ht){
     pair stats = maximumChainLength(ht);
 
     (void)printf("-----------------------\n");
@@ -88,7 +87,7 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     size_t line_capacity = 0;
     int line_length; 
 
-    while((line_length = getline(&line_buff, &line_capacity, m_file)) != -1){        
+    while((line_length = getl(&line_buff, &line_capacity, m_file)) != -1){        
         char* key = strtok(line_buff, " ");
         char* val = strtok(NULL, "\n");
 
@@ -129,7 +128,7 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     fclose(m_file);
 }
 
-void ht_print_perfomance_stats(HashTable* ht, int argc, char* argv[]){
+void ht_print_perfomance_stats(HashTable* ht, int argc, char* argv[], PrintHelper print_helper){
     if(argc > 1 && strcmp(argv[1], "stats") == 0){
         // To output the chain, traverse the maxChainNode as a simple linked list
         Ht_Item* maxChainNode = ht->buckets[maximumChainLength(ht).hashOfMaxChain]; 
@@ -137,9 +136,9 @@ void ht_print_perfomance_stats(HashTable* ht, int argc, char* argv[]){
         printf("%s: %s\n", (char*)maxChainNode->key, (char*)maxChainNode->val);
 
         // Time Performances
-        printHashTableInfo(ht);
+        ht_print_time_performances(ht);
     }
     else if(argc > 1 && strcmp(argv[1], "print") == 0){
-        ht_print(ht, print_string_string);
+        ht_print(ht, print_helper);
     }
 }
