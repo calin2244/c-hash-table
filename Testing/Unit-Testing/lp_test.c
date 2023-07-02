@@ -1,5 +1,5 @@
-#include "../src/hash_map.h"
-#include "../src/hash_utils.h"
+#include "../../src/hash_map.h"
+#include "../../src/hash_utils.h"
 #include <time.h>
 #include <stdio.h>
 

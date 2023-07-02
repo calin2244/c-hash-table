@@ -1,6 +1,6 @@
-#include "../src/hash_iterator.h" // include "hash_map.h" too
-#include "../src/hash_map.h"
-#include "../src/hash_utils.h"
+#include "../../src/hash_iterator.h" // include "hash_map.h" too
+#include "../../src/hash_map.h"
+#include "../../src/hash_utils.h"
 #include <time.h>
 
 #define ENTRIES_PATH "./Data(input)/entries.txt"
