@@ -1,9 +1,6 @@
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
 #include "hash_map.h"
-#include "getline.h"
-
-// int getline(char** lline, size_t* len, FILE* m_file);
 
 typedef struct{
     size_t maxChainLen;
@@ -39,6 +36,11 @@ pair maximumChainLength(HashTable* ht){
 void ht_print(HashTable* ht, PrintHelper printHasht){
     for(size_t hash = 0; hash < ht->capacity; ++hash){
         Ht_Item* item = ht->buckets[hash];
+
+        // Open Addressing Check
+        if(item && item->is_tombstone)
+            continue;
+
         if(item){
             printHasht(hash, ht->buckets[hash]->key, ht->buckets[hash]->val);
             if(item->next){
@@ -75,6 +77,61 @@ void ht_print_time_performances(HashTable* ht){
     (void)printf("-----------------------\n");
 }
 
+/* Copyright (C) 1991 Free Software Foundation, Inc.
+This file is part of the GNU C Library.
+
+The GNU C Library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Library General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.
+
+The GNU C Library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Library General Public License for more details.
+
+You should have received a copy of the GNU Library General Public
+License along with the GNU C Library; see the file COPYING.LIB.  If
+not, write to the Free Software Foundation, Inc., 675 Mass Ave,
+Cambridge, MA 02139, USA.  */
+
+/* CHANGED FOR VMS */
+int getl(char **lineptr, size_t *n, FILE *stream){
+    static char line[256];
+    char* ptr;
+    unsigned int len;
+
+    if(lineptr == NULL || n == NULL){
+        errno = EINVAL;
+        return -1;
+    }
+
+    if(ferror (stream))
+        return -1;
+
+    if(feof(stream))
+        return -1;
+        
+    fgets(line,256,stream);
+
+    ptr = strchr(line,'\n');   
+    if(ptr)
+        *ptr = '\0';
+
+    len = strlen(line);
+
+    if((len+1) < 256){
+        ptr = (char*)realloc(*lineptr, 256);
+        if (ptr == NULL)
+            return(-1);
+        *lineptr = ptr;
+        *n = 256;
+    }
+
+    strcpy(*lineptr,line); 
+    return(len);
+}
+
 // Parsing
 int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
     FILE* m_file = fopen(file_name, "r");
@@ -102,8 +159,8 @@ int parseFileAndPopulateHashTable(HashTable* ht, const char* file_name){
                 val_size--;
             }
 
-            if(strlen(val) > 1)
-                ht_insert(ht, key, val, strlen(val) + 1);
+            if(val_size != 0)
+                ht_insert(ht, key, val, val_size + 1);
         }
     }
 
@@ -122,7 +179,7 @@ void parseFileAndRemoveEntries(HashTable* ht, const char* file_name){
     // Removing every entry in the hash table by parsing the file
     while(fgets(line_buffer, sizeof(line_buffer), m_file)){
         const char* key = strtok(line_buffer, " ");
-        ht_remove(ht, key); 
+        (void)ht_remove(ht, key); 
     }
 
     fclose(m_file);

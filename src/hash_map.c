@@ -1,6 +1,5 @@
 #include "hash_map.h"
 
-
 /*
     * Hash Functions!
     * I've implemented below a normal hash function
@@ -114,7 +113,7 @@ void ht_resize(HashTable* ht, size_t new_capacity){
     free(new_ht);
 }
 
-Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
+Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){ 
     Ht_Item* new_item = (Ht_Item*)malloc(sizeof(Ht_Item));
     if(!new_item)
         return NULL;
@@ -126,6 +125,7 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
     }
 
     (void)strncpy(new_item->key, key, strlen(key) + 1);
+    new_item->key[strlen(key)] = '\0';
 
     // Or just do strdup for strings
     new_item->val = malloc(val_size + 1);
@@ -138,6 +138,7 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
     (void)memcpy(new_item->val, val, val_size);
 
     new_item->val_size = val_size;
+    new_item->is_tombstone = false;
     new_item->next = NULL;
     return new_item;
 }
@@ -149,15 +150,11 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
 // Normal collision, keys coincide
 void handle_collision(Ht_Item* item, const void* val, size_t val_size){    
     if(item->val){
-
-        // *This line will only work with strings as the key of the HashTable :/
-        // if(strcmp((char*)item->val, (char*)val) == 0)
-        //     return;
-
         free(item->val);
-        item->val = malloc(val_size + 1);
-        (void)memcpy(item->val, val, val_size);
     }
+
+    item->val = malloc(val_size + 1);
+    (void)memcpy(item->val, val, val_size);
 }
 
 void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
@@ -183,7 +180,22 @@ void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const
 }
 
 void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
+    Ht_Item* itm = ht->buckets[idx];
+
     while(ht->buckets[idx]){
+        if(itm->is_tombstone){
+            itm->is_tombstone = false;
+            
+            itm->key = (char*)malloc(strlen(key) + 1);
+            (void)strncpy(itm->key, key, strlen(key) + 1);
+
+            itm->val = malloc(val_size + 1);
+            (void)memcpy(itm->val, val, val_size);
+
+            ht->size++;
+            return;
+        }
+
         ht->collisions++;
         
         if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
@@ -193,8 +205,9 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
         }
         
         idx = (idx + 1) % ht->capacity;
+        itm = ht->buckets[idx];
     }
-                
+
     ht->buckets[idx] = ht_item_create(key, val, val_size);
     ht->size++;
 }
@@ -202,7 +215,7 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
 void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     size_t initial_idx = idx;
     uint16_t curr_power = 1;
-    printf("Init idx: %ld\n", initial_idx);
+
     while(ht->buckets[idx]){
         ht->collisions++;
 
@@ -311,7 +324,7 @@ bool ht_remove(HashTable* ht, const char* key) {
                 ht->size--;
                 
                 free_ht_item(curr);
-                curr = NULL;
+
                 // Return, we have deleted the item
                 return true;
             }
@@ -320,23 +333,52 @@ bool ht_remove(HashTable* ht, const char* key) {
         }
     }
     else if(ht->coll_resolution == LINEAR_PROBING){
-        while(ht->buckets[idx]){
-            Ht_Item* item = ht->buckets[idx];
-            if(strcmp((const char*)item->key, (const char*)key) == 0){
-                free_ht_item(*curr_item);
-                *curr_item = NULL;
+    size_t start_idx = idx;
 
+    while (ht->buckets[idx]) {
+        Ht_Item* item = ht->buckets[idx];
+        if (!item->is_tombstone && strcmp(item->key, key) == 0) {
+
+            free(item->key);
+            free(item->val);
+            item->is_tombstone = true;
+            ht->size--;
+
+            return true;
+        }
+
+        idx = (idx + 1) % ht->capacity;
+
+        if (idx == start_idx) {
+            // Reached starting index, item not found
+            return false;
+        }
+    }
+
+    return false;
+}
+    else if(ht->coll_resolution == QUADRATIC_PROBING){
+        size_t initial_idx = idx;
+        uint16_t curr_power = 1;
+
+        while(ht->buckets[idx]){
+            ht->collisions++;
+
+            if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
+                free_ht_item(*curr_item);
+                *curr_item = NULL;  
+
+                ht->size--;          
+                
                 return true;
             }
 
-            idx = (idx + 1) % ht->capacity;
+            idx = (initial_idx + (curr_power * curr_power)) % ht->capacity;
+            curr_power++;
 
             curr_item = &ht->buckets[idx];
         }
 
-        return false;
-    }
-    else if(ht->coll_resolution == QUADRATIC_PROBING){
         return false;
     }
 
@@ -387,25 +429,40 @@ void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_
 // FREEING!
 void free_ht_item(Ht_Item* item){
     if(item){
-        if(item->key)
+        if(item->key){
             free(item->key);
+            item->key = NULL;
+        }
         
-        if(item->val)
+        if(item->val){
             free(item->val);
+            item->val = NULL;
+        }
         
         free(item);
     }
 }
 
+
+// TODO: size checking
 void free_ht(HashTable** ht){
     for(size_t i = 0; i < (*ht)->capacity; ++i){
-        Ht_Item* item = (*ht)->buckets[i];
-        while(item){
-            Ht_Item* next = item->next;
-            free(item->key);
-            free(item->val);
-            free(item);
-            item = next;
+        Ht_Item** item = &(*ht)->buckets[i];
+
+        // Open Addressing Check
+        if((*ht)->coll_resolution >= LINEAR_PROBING && 
+            (*ht)->buckets[i] && 
+            (*item)->is_tombstone){
+            free(*item);
+            *item = NULL;
+            continue;
+        }
+
+        while(*item){
+            Ht_Item* next = (*item)->next;
+            free_ht_item(*item);
+            *item = NULL;
+            *item = next;
         }
     }
 

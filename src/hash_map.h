@@ -2,20 +2,19 @@
 #define HASH_MAP_H
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define CAPACITY 100 // Table Size
 #define CHAINING_THRESHOLD 0.7f
 #define OA_THRESHOLD 0.45f
-#define INCREMENTAL_RESIZING 0.2f
+#define INCREMENTAL_RESIZING 0.5f
+#define TOMBSTONE ((Ht_Item*)0x00)
 // OA = Open-Addressing, so for both LP and QP
-
-// COLLISION FLAGS
-#define INSERT_ENTRY 0x01
-#define SEARCH_ENTRY 0x02
 
 // *FOR PERFORMANCE TESTING
 
@@ -47,6 +46,7 @@ typedef struct Ht_Item{
     char* key;
     void* val;
     size_t val_size;
+    bool is_tombstone; // Used for Open Addresing Coll Resolutions
     struct Ht_Item* next;
 }Ht_Item;
 
