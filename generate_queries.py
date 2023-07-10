@@ -7,8 +7,8 @@ def generate_dataset(size, collision_rate, key_len, val_len):
     keys = set()
 
     for _ in range(size):
-        key = ''.join(random.choices(string.ascii_letters, k=random.randint(3, key_len)))
-        value = ''.join(random.choices(string.ascii_letters, k=random.randint(3, val_len)))
+        key = ''.join(random.choices(string.ascii_letters, k=random.randint(4, key_len)))
+        value = ''.join(random.choices(string.ascii_letters, k=random.randint(4, val_len)))
         dataset.append((key, value))
 
         if random.random() < collision_rate:
@@ -26,9 +26,9 @@ def generate_dataset(size, collision_rate, key_len, val_len):
 
 # Generate a dataset of size 500k with a collision rate of 0.4 (10% chance of collision)
 # Allocating around 78 million bytes
-dataset = generate_dataset(2000, 0.2, 12, 15)
+dataset = generate_dataset(8500, 0.15, 9, 15)
 
 # Write the dataset to a file
-with open('./Unit-Testing/Data(Input)/entries.txt', 'w') as file:
+with open('./Testing/Unit-Testing/Data(Input)/entries.txt', 'w') as file:
     for key, value in dataset:
         file.write(f"{key} {value}\n")
