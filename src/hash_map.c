@@ -313,7 +313,7 @@ bool ht_remove(HashTable* ht, const char* key) {
 
     if(ht->coll_resolution == CHAINING){
         
-        if(*curr_item == NULL)
+        if(!(*curr_item))
             return false;
         
         while(*curr_item){
@@ -333,30 +333,30 @@ bool ht_remove(HashTable* ht, const char* key) {
         }
     }
     else if(ht->coll_resolution == LINEAR_PROBING){
-    size_t start_idx = idx;
+        size_t start_idx = idx;
 
-    while (ht->buckets[idx]) {
-        Ht_Item* item = ht->buckets[idx];
-        if (!item->is_tombstone && strcmp(item->key, key) == 0) {
+        while(ht->buckets[idx]){
+            Ht_Item* item = ht->buckets[idx];
+            if(!item->is_tombstone && strcmp(item->key, key) == 0){
 
-            free(item->key);
-            free(item->val);
-            item->is_tombstone = true;
-            ht->size--;
+                free(item->key);
+                free(item->val);
+                item->is_tombstone = true;
+                ht->size--;
 
-            return true;
+                return true;
+            }
+
+            idx = (idx + 1) % ht->capacity;
+
+            if(idx == start_idx){
+                // Reached starting index, item not found
+                return false;
+            }
         }
 
-        idx = (idx + 1) % ht->capacity;
-
-        if (idx == start_idx) {
-            // Reached starting index, item not found
-            return false;
-        }
+        return false;
     }
-
-    return false;
-}
     else if(ht->coll_resolution == QUADRATIC_PROBING){
         size_t initial_idx = idx;
         uint16_t curr_power = 1;
@@ -403,6 +403,9 @@ void* ht_get_item(HashTable* ht, const char* key){
         }
     }else if(ht->coll_resolution == LINEAR_PROBING){
         size_t start_idx = idx;
+        if(ht->buckets[idx]->is_tombstone)
+            return NULL;
+
         while(curr_item){
             if(strcmp((char*)curr_item->key, (char*)key) == 0){
                 return curr_item->val;
@@ -475,6 +478,13 @@ void free_ht(HashTable** ht){
 void clear_ht(HashTable* ht){
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item** item = &ht->buckets[i];
+
+        // Open Addressing Check
+        if(*item && (*item)->is_tombstone){
+            free(*item);
+            *item = NULL;
+            continue;
+        }
 
         // We iterate through each bucket(In case there is chaining)
         while(*item){
