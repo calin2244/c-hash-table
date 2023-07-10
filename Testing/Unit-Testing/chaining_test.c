@@ -1,13 +1,22 @@
 #include "../../src/hash_iterator.h" // include "hash_map.h" too
-#include "../../src/hash_map.h"
 #include "../../src/hash_utils.h"
+#include "env_vars.h"
+#include <assert.h>
 #include <time.h>
 
-#define ENTRIES_PATH "./Data(input)/entries.txt"
-#define OUTPUT_PATH "./Data(output)/chain_out.txt"
-
 int main(int argc, char* argv[]){
-    HashTable* hash_t = ht_create(13, fnv_hash_func, CHAINING);
+    
+    HashTable* hash_t = NULL;
+    if(argc > 2){
+        int size = atoi(argv[2]);
+        printf("Size: %d\n", size);
+        hash_t = ht_create((size_t)size, fnv_hash_func, CHAINING);
+    }
+    else{
+        // Fixed Size
+        hash_t = ht_create(INITIAL_HT_SIZE, fnv_hash_func, CHAINING);
+    }
+
     HashIterator iterator = ht_iterator_create(hash_t);
     
     int result = parseFileAndPopulateHashTable(hash_t, ENTRIES_PATH);
@@ -40,13 +49,12 @@ int main(int argc, char* argv[]){
     ht_print_perfomance_stats(hash_t, argc, argv, print_string_string);
 
     // Saving the Data from the Hash Table in a text file
-    FILE* out = fopen(OUTPUT_PATH, "w");
+    FILE* out = fopen(OUTPUT_PATH_CHAINING, "w");
     if(!out){
         (void)printf("Couldn't open the Output file!\n");
         return -1;
     }
 
-    // Only the unique keys will be in here
     for(size_t i = 0; i < hash_t->capacity; ++i){
         Ht_Item* item = hash_t->buckets[i];
         while(item){
@@ -57,22 +65,13 @@ int main(int argc, char* argv[]){
         }
     }
 
-    (void)fclose(out);
+    // (void)fclose(out);
+
     parseFileAndRemoveEntries(hash_t, ENTRIES_PATH);
+
+    // Assertions
+    assert(hash_t->size == 0);
+
     free_ht(&hash_t);
     return 0;
 }
-
-
-    // Ht_Item* c = hash_t->buckets[9258];
-    // Ht_Item** p = &c;
-
-    // while(*p){
-    //     // printItemInfo(*p);
-    //     p = &(*p)->next;
-    // }
-
-    // while(c){
-    //     printItemInfo(c);
-    //     c = c->next;
-    // }

@@ -54,4 +54,4 @@ qp_test.o: qp_test.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR) $(CHAINING_TARGET) $(LP_TARGET)
+	rm -rf $(OBJ_DIR) $(CHAINING_TARGET) $(LP_TARGET) $(QP_TARGET)

@@ -1,9 +1,5 @@
-#include "../../src/hash_map.h"
 #include "../../src/hash_utils.h"
 #include "env_vars.h"
-
-#define OUTPUT_PATH "./Data(output)/qp_out.txt"
-
 
 int main(int argc, char* argv[]){
     HashTable* hash_t = NULL;
@@ -12,7 +8,7 @@ int main(int argc, char* argv[]){
     if(argc > 2){
         int size = atoi(argv[2]);
         printf("Size: %d\n", size);
-        hash_t = ht_create(size, jenkins_hash_func, QUADRATIC_PROBING);
+        hash_t = ht_create((size_t)size, jenkins_hash_func, QUADRATIC_PROBING);
     }
     else{
         // Fixed Size
