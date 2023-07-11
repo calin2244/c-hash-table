@@ -146,6 +146,7 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
 /*
     * Collosion Handling
 */
+void handle_tombstone();
 
 // Normal collision, keys coincide
 void handle_collision(Ht_Item* item, const void* val, size_t val_size){    
@@ -214,9 +215,23 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
 
 void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     size_t initial_idx = idx;
-    uint16_t curr_power = 1;
+    uint16_t curr_power = 1;    
+    Ht_Item* itm = ht->buckets[idx];
 
     while(ht->buckets[idx]){
+        if(itm->is_tombstone){
+            itm->is_tombstone = false;
+
+            itm->key = (char*)malloc(strlen(key) + 1);
+            (void)strncpy(itm->key, key, strlen(key) + 1);
+
+            itm->val = malloc(val_size + 1);
+            (void)memcpy(itm->val, val, val_size);
+
+            ht->size++;
+            return;
+        }
+
         ht->collisions++;
 
         if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
@@ -226,12 +241,13 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
 
         idx = (initial_idx + (curr_power * curr_power)) % ht->capacity;
         curr_power++;
+
+        itm = ht->buckets[idx];
     }
 
     ht->buckets[idx] = ht_item_create(key, val, val_size);
     ht->size++;
 }
-
 // End of Collosion Handling
 
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size){
@@ -338,7 +354,6 @@ bool ht_remove(HashTable* ht, const char* key) {
         while(ht->buckets[idx]){
             Ht_Item* item = ht->buckets[idx];
             if(!item->is_tombstone && strcmp(item->key, key) == 0){
-
                 free(item->key);
                 free(item->val);
                 item->is_tombstone = true;
@@ -362,12 +377,12 @@ bool ht_remove(HashTable* ht, const char* key) {
         uint16_t curr_power = 1;
 
         while(ht->buckets[idx]){
-            ht->collisions++;
+            Ht_Item* item = ht->buckets[idx];
 
-            if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
-                free_ht_item(*curr_item);
-                *curr_item = NULL;  
-
+            if(!item->is_tombstone && strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
+                free(item->key);
+                free(item->val);
+                item->is_tombstone = true;
                 ht->size--;          
                 
                 return true;
@@ -375,8 +390,6 @@ bool ht_remove(HashTable* ht, const char* key) {
 
             idx = (initial_idx + (curr_power * curr_power)) % ht->capacity;
             curr_power++;
-
-            curr_item = &ht->buckets[idx];
         }
 
         return false;
@@ -399,6 +412,7 @@ void* ht_get_item(HashTable* ht, const char* key){
             if (strcmp(curr_item->key, key) == 0) {
                 return curr_item->val;
             }
+
             curr_item = curr_item->next;
         }
     }else if(ht->coll_resolution == LINEAR_PROBING){
@@ -494,4 +508,8 @@ void clear_ht(HashTable* ht){
             *item = next;
         }
     }
+
+    ht->collisions = 0;
+    ht->load_factor = 0;
+    ht->size = 0;
 }
