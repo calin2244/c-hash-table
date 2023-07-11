@@ -1,6 +1,8 @@
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
-#include "hash_map.h"
+#include <errno.h>
+struct HashTable; // Forward-Declaration
+typedef void (*PrintHelper)(size_t, const char*, const void*);
 
 typedef struct{
     size_t maxChainLen;
