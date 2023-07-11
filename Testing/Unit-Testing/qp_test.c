@@ -1,5 +1,7 @@
+#include "../../src/hash_map.h"
 #include "../../src/hash_utils.h"
 #include "env_vars.h"
+#include <assert.h>
 
 int main(int argc, char* argv[]){
     HashTable* hash_t = NULL;
@@ -19,7 +21,9 @@ int main(int argc, char* argv[]){
 
     ht_print_perfomance_stats(hash_t, argc, argv, print_string_string);
 
-    // parseFileAndRemoveEntries(hash_t, OUTPUT_PATH);
+    parseFileAndRemoveEntries(hash_t, ENTRIES_PATH);
+
+    assert(hash_t->size == 0);
 
     free_ht(&hash_t);
 

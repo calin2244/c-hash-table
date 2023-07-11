@@ -1,3 +1,4 @@
+#include "../../src/hash_map.h"
 #include "../../src/hash_utils.h"
 #include "env_vars.h"
 #include <time.h>
