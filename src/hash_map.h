@@ -68,6 +68,7 @@ void handle_collision(Ht_Item* item, const void* val, size_t val_size);
 void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
+void handle_tombstones(Ht_Item* itm, const char* key, const char* val, size_t val_size);
 
 // Hash Table Functions
 HashTable* ht_create(size_t capacity, size_t (*hash_func)(const char*, size_t), CollisionResolution coll_res);
