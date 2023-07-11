@@ -146,7 +146,15 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
 /*
     * Collosion Handling
 */
-void handle_tombstone();
+void handle_tombstones(Ht_Item* itm, const char* key, const char* val, size_t val_size){
+    itm->is_tombstone = false;
+            
+    itm->key = (char*)malloc(strlen(key) + 1);
+    (void)strncpy(itm->key, key, strlen(key) + 1);
+
+    itm->val = malloc(val_size + 1);
+    (void)memcpy(itm->val, val, val_size);
+}
 
 // Normal collision, keys coincide
 void handle_collision(Ht_Item* item, const void* val, size_t val_size){    
@@ -185,15 +193,9 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
 
     while(ht->buckets[idx]){
         if(itm->is_tombstone){
-            itm->is_tombstone = false;
-            
-            itm->key = (char*)malloc(strlen(key) + 1);
-            (void)strncpy(itm->key, key, strlen(key) + 1);
-
-            itm->val = malloc(val_size + 1);
-            (void)memcpy(itm->val, val, val_size);
-
+            handle_tombstones(itm, key, val, val_size);
             ht->size++;
+
             return;
         }
 
@@ -220,13 +222,7 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
 
     while(ht->buckets[idx]){
         if(itm->is_tombstone){
-            itm->is_tombstone = false;
-
-            itm->key = (char*)malloc(strlen(key) + 1);
-            (void)strncpy(itm->key, key, strlen(key) + 1);
-
-            itm->val = malloc(val_size + 1);
-            (void)memcpy(itm->val, val, val_size);
+            handle_tombstones(itm, key, val, val_size);
 
             ht->size++;
             return;
@@ -239,7 +235,7 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
             return;
         }
 
-        idx = (initial_idx + (curr_power * curr_power)) % ht->capacity;
+        idx = (initial_idx + (size_t)(curr_power * curr_power)) % ht->capacity;
         curr_power++;
 
         itm = ht->buckets[idx];
@@ -282,6 +278,7 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
     }
 }
 
+// TODO: add tombstone logic
 bool ht_has_key(const HashTable* ht, const char* key){
     size_t idx = ht->hash_func(key, ht->capacity);
     
@@ -388,7 +385,7 @@ bool ht_remove(HashTable* ht, const char* key) {
                 return true;
             }
 
-            idx = (initial_idx + (curr_power * curr_power)) % ht->capacity;
+            idx = (initial_idx + (size_t)(curr_power * curr_power)) % ht->capacity;
             curr_power++;
         }
 
@@ -405,8 +402,13 @@ bool ht_remove(HashTable* ht, const char* key) {
 */
 void* ht_get_item(HashTable* ht, const char* key){
     size_t idx = ht->hash_func(key, ht->capacity);
-    Ht_Item* curr_item = ht->buckets[idx];
+    // ? Look Into This after adding Robin Hood
+    if(ht->coll_resolution >= LINEAR_PROBING && ht->buckets[idx])
+        if(ht->buckets[idx]->is_tombstone)
+            return NULL;
 
+    Ht_Item* curr_item = ht->buckets[idx];
+    
     if(ht->coll_resolution == CHAINING){
         while(curr_item){
             if (strcmp(curr_item->key, key) == 0) {
@@ -417,10 +419,8 @@ void* ht_get_item(HashTable* ht, const char* key){
         }
     }else if(ht->coll_resolution == LINEAR_PROBING){
         size_t start_idx = idx;
-        if(ht->buckets[idx]->is_tombstone)
-            return NULL;
 
-        while(curr_item){
+        while(ht->buckets[idx]){
             if(strcmp((char*)curr_item->key, (char*)key) == 0){
                 return curr_item->val;
             }
@@ -430,6 +430,24 @@ void* ht_get_item(HashTable* ht, const char* key){
             if(idx == start_idx){
                 break; // Reached the starting index, no match found
             }
+
+            curr_item = ht->buckets[idx];
+        }
+    }
+    else if(ht->coll_resolution == QUADRATIC_PROBING){
+        size_t initial_idx = idx;
+        uint16_t curr_power = 0;
+
+        while(ht->buckets[idx]){
+
+            ht->collisions++;
+
+            if(strcmp((char*)(curr_item)->key, (char*)key) == 0){
+                return curr_item->val;
+            }
+
+            idx = (initial_idx + (size_t)(curr_power * curr_power)) % ht->capacity;
+            curr_power++;
 
             curr_item = ht->buckets[idx];
         }
