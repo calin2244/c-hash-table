@@ -2,7 +2,6 @@
 #define HASH_MAP_H
 
 #include <stdio.h>
-#include <errno.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -13,11 +12,10 @@
 #define CHAINING_THRESHOLD 0.7f
 #define OA_THRESHOLD 0.45f
 #define INCREMENTAL_RESIZING 0.5f
-#define TOMBSTONE ((Ht_Item*)0x00)
 // OA = Open-Addressing, so for both LP and QP
 
-// *FOR PERFORMANCE TESTING
 
+// *FOR PERFORMANCE TESTING
 #define max(a,b) \
     ({ __typeof__ (a) _a = (a); \
         __typeof__ (b) _b = (b); \
@@ -28,7 +26,7 @@
 typedef enum{
     CHAINING = 0,
     LINEAR_PROBING,
-    QUADRATIC_PROBING, // TODO: Actually implement this
+    QUADRATIC_PROBING, // TODO: Add tombstone Logic
     ROBIN_HOOD // TODO: Implemnt this
 }CollisionResolution;
 
@@ -46,23 +44,21 @@ typedef struct Ht_Item{
     char* key;
     void* val;
     size_t val_size;
-    bool is_tombstone; // Used for Open Addresing Coll Resolutions
+    bool is_tombstone; // *Used for Open Addresing Coll Resolutions
     struct Ht_Item* next;
 }Ht_Item;
 
 typedef struct HashTable{
-    size_t size; // The current size of the Hash Table
-    size_t capacity; // Max Size
-    int collisions;
-    float load_factor;
+    size_t size; // *The current size of the Hash Table
+    size_t capacity; // *Max Size
+    int collisions; // *Total number of collisions
+    float load_factor; // *Resizing Mechanism
     Ht_Item** buckets;
     size_t (*hash_func)(const char*, size_t);
     CollisionResolution coll_resolution;
 }HashTable;
 
-typedef void (*PrintHelper)(size_t, const char*, const void*);
-
-// Hashing
+// Hash Functions
 size_t fnv_hash_func(const char* key, size_t capacity);
 size_t fnv_double_hash_func(const char* key, size_t capacity);
 size_t jenkins_hash_func(const char* key, size_t capacity);
@@ -83,8 +79,8 @@ bool ht_remove(HashTable* ht, const char* key);
 void* ht_get_item(HashTable* ht, const char* key);
 Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size);
 void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_size);
-// void* ht_search(HashTable* ht, const void* key);
 void free_ht_item(Ht_Item* item);
 void clear_ht(HashTable* ht);
+void ht_purge_slot(HashTable* ht);
 
 #endif // HASH_TABLE_H
