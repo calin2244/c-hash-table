@@ -68,7 +68,7 @@ void handle_collision(Ht_Item* item, const void* val, size_t val_size);
 void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
-void handle_tombstones(Ht_Item* itm, const char* key, const char* val, size_t val_size);
+void handle_tombstones(Ht_Item* itm, const char* key, const void* val, size_t val_size);
 
 // Hash Table Functions
 HashTable* ht_create(size_t capacity, size_t (*hash_func)(const char*, size_t), CollisionResolution coll_res);
@@ -82,6 +82,6 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size);
 void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_size);
 void free_ht_item(Ht_Item* item);
 void clear_ht(HashTable* ht);
-void ht_purge_slot(HashTable* ht);
+bool ht_purge_slot(HashTable* ht, size_t idx);
 
 #endif // HASH_TABLE_H

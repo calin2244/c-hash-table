@@ -146,7 +146,7 @@ Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size){
 /*
     * Collosion Handling
 */
-void handle_tombstones(Ht_Item* itm, const char* key, const char* val, size_t val_size){
+void handle_tombstones(Ht_Item* itm, const char* key, const void* val, size_t val_size){
     itm->is_tombstone = false;
             
     itm->key = (char*)malloc(strlen(key) + 1);
@@ -266,7 +266,6 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
     ht->load_factor = (float)ht->size / (float)ht->capacity;
 
     
-    //TODO: Update correctly the number of collisions
     if(ht->coll_resolution == CHAINING){
         handle_collision_chaining(ht, idx, key, val, val_size);
     }
@@ -296,7 +295,8 @@ bool ht_has_key(const HashTable* ht, const char* key){
     }else if(ht->coll_resolution == LINEAR_PROBING){
         while(ht->buckets[idx]){
             Ht_Item* item = ht->buckets[idx];
-            if(strcmp((const char*)item->key, (const char*)key) == 0)
+
+            if(!item->is_tombstone && strcmp((const char*)item->key, (const char*)key) == 0)
                 return true;
             else return false;
             
@@ -313,7 +313,6 @@ bool ht_has_key(const HashTable* ht, const char* key){
     return false;
 }
 
-// TODO: Implement Quadratic Probing
 /*  
     * UPDATE: The function will now free the memory, it's safer
     * It returns 1 if it was able to find the item and remove it
@@ -395,7 +394,6 @@ bool ht_remove(HashTable* ht, const char* key) {
     return false;
 }
 
-// TODO: Implement Quadratic Probing
 /*
     * Not safe, it borrows the item // pointer to item
     * Assumes user won't free the memory
@@ -411,7 +409,7 @@ void* ht_get_item(HashTable* ht, const char* key){
     
     if(ht->coll_resolution == CHAINING){
         while(curr_item){
-            if (strcmp(curr_item->key, key) == 0) {
+            if (strcmp(curr_item->key, key) == 0){
                 return curr_item->val;
             }
 
@@ -530,4 +528,23 @@ void clear_ht(HashTable* ht){
     ht->collisions = 0;
     ht->load_factor = 0;
     ht->size = 0;
+}
+
+/*
+    * Will return true if it was able to purge the slot
+    * Will return false otherwise(slot is already NULL)
+*/
+bool ht_purge_slot(HashTable* ht, size_t idx){
+    if(ht->buckets[idx] && ht->buckets[idx]->is_tombstone){
+        free(ht->buckets[idx]);
+        ht->buckets[idx] = NULL;
+        return true;
+    }else if(ht->buckets[idx]){
+        free(ht->buckets[idx]);
+        ht->buckets[idx] = NULL;
+        return true;
+    }
+
+    // In case the slot is NULL
+    return NULL;
 }
