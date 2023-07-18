@@ -65,7 +65,7 @@ int main(int argc, char* argv[]){
         }
     }
 
-    // (void)fclose(out);
+    (void)fclose(out);
 
     parseFileAndRemoveEntries(hash_t, ENTRIES_PATH);
 
