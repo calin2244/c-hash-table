@@ -29,7 +29,7 @@ void renderBuckets(std::vector<TextBox>& boxes, std::unique_ptr<HashTable*>& ht,
                     boxes[idx].writeText(
                         "K: " + std::string(static_cast<char*>((*ht)->buckets[idx]->key)), 
                         "V: " + std::string(static_cast<char*>((*ht)->buckets[idx]->val)), idx, 
-                        &font, color::Yellow, CUSTOM_CYAN
+                        &font, color::Yellow, CUSTOM_CYAN, CUSTOM_PURPLE   
                     );
                 }else{
                     boxes[idx].setOutlineColor(color::Red);
@@ -47,16 +47,19 @@ void renderBucketsToScreen(std::vector<TextBox>& boxes, sf::RenderWindow& window
 }
 
 int main(){
-    sf::RenderWindow window(sf::VideoMode(800, 600), "HashTable Illustration");
+    sf::RenderWindow window(sf::VideoMode(820, 600), "HashTable Illustration");
     sf::View view(window.getDefaultView());
 
-    std::unique_ptr<HashTable*> hash_t = std::make_unique<HashTable*>(ht_create(29, fnv_hash_func, LINEAR_PROBING));
+    std::unique_ptr<HashTable*> hash_t = std::make_unique<HashTable*>(ht_create(33, fnv_hash_func, LINEAR_PROBING));
     std::vector<TextBox> boxes((*hash_t)->capacity , TextBox());
     ht_insert(*hash_t, "salut:D", "Regele", 7);
     ht_insert(*hash_t, "CalinRege", "Apricot", 7);
     ht_insert(*hash_t, "Rares Boss", "rege", 5);
     ht_insert(*hash_t, "Dejan", "sall", 5);
     ht_insert(*hash_t, "Aries", "Glitter", 8);
+    ht_insert(*hash_t, "AriesWow", "Glitter", 8);
+    ht_insert(*hash_t, "Amy's Grave", "Glitter", 8);
+    ht_insert(*hash_t, "90Days", "Glitter", 8);
 
     sf::Font mJosefinSans;
     if(!mJosefinSans.loadFromFile("./Fonts/JosefinSans-Bold.ttf")){
