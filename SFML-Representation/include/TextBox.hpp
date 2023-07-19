@@ -11,14 +11,16 @@ using vec2i = sf::Vector2<int>;
 using color = sf::Color;
 
 class TextBox{
-    uint16_t height;
-    uint16_t width;
     mutable sf::RectangleShape rectangle;
-    mutable sf::Text text;
+    sf::Text keyText;
+    sf::Text valueText;
+    sf::Text hash;
     sf::Font m_font;
     public:
-        TextBox() = default;
-        TextBox(const uint16_t& height, const uint16_t& width): height(height), width(width){}
+    float height;
+    float width;
+        TextBox(): height(0), width(0){}
+        TextBox(const float& height, const float& width): height(height), width(width){}
 
         TextBox& setOutlineThickness(const float& thickness){
             this->rectangle.setOutlineThickness(thickness);
@@ -27,6 +29,8 @@ class TextBox{
 
         TextBox& setSize(const vec2f& size = {5, 5}){
             this->rectangle.setSize(size);
+            this->height = height;
+            this->width = width;
             return *this;
         }
 
@@ -47,22 +51,39 @@ class TextBox{
         
         void renderToScreen(sf::RenderWindow& window){
             window.draw(this->rectangle);
-            window.draw(this->text);
+
+            // Drawing the Key, Value and Hash
+            window.draw(this->keyText);
+            window.draw(this->valueText);
+            window.draw(this->hash);
         }
 
-        void writeText(const std::string_view& str, const sf::Font* font, const color& color = color::White){
+        void writeText(const std::string_view& key, const std::string_view& val, 
+            const size_t& hash, const sf::Font* font, 
+            const color& key_color = color::White, const color& value_color = color::White){
+
             sf::FloatRect bounds = rectangle.getGlobalBounds();
             vec2f bnds = {bounds.left + bounds.width / 2.0f, bounds.top + bounds.height / 2.0f};
 
-            this->text = {str.data(), *font, 18};
-           
-            sf::FloatRect textBounds = text.getLocalBounds();
-            sf::FloatRect rectangleBounds = rectangle.getGlobalBounds();
-            vec2f centerPos = {rectangleBounds.left + (rectangleBounds.width - textBounds.width) / 2.0f,
-                    rectangleBounds.top + (rectangleBounds.height - textBounds.height) / 2.0f};
+            this->keyText = {key.data(), *font, 18};
+            this->valueText = {val.data(), *font, 18};
+            this->hash = {std::to_string(hash), *font, 14};
 
-            text.setPosition(centerPos);
-            text.setFillColor(color);
+            sf::FloatRect textValueBound = this->valueText.getLocalBounds();
+            sf::FloatRect textKeyBound = this->keyText.getLocalBounds();
+            sf::FloatRect rectangleBounds = this->rectangle.getGlobalBounds();
+            vec2f centerPosValue = {rectangleBounds.left + (rectangleBounds.width - textValueBound.width) / 2.0f,
+                    rectangleBounds.top + (rectangleBounds.height - textValueBound.height) / 2.0f};
+            vec2f centerPosKey = {rectangleBounds.left + (rectangleBounds.width - textKeyBound.width) / 2.0f,
+                    rectangleBounds.top + (rectangleBounds.height - textKeyBound.height) / 2.0f};
+
+            this->keyText.setPosition(centerPosKey.x, centerPosKey.y - 25);
+            this->valueText.setPosition(centerPosValue);
+            this->hash.setPosition(centerPosValue.x + 25, centerPosValue.y + 25);
+            
+            this->keyText.setFillColor(key_color);
+            this->valueText.setFillColor(value_color);
+            this->hash.setFillColor(color::White);
         }
 
         bool setFont(const char* path_to_string){
@@ -77,7 +98,16 @@ class TextBox{
             this->setSize(size).setPosition(pos).setFillColor(fill_color).setOutlineColor(outline_color).setOutlineThickness(thickness);
         }
 
+        bool isEmpty() const{
+            return this->height == 0 && this->width == 0;
+        }
+
         sf::RectangleShape getRectangle() const{
             return this->rectangle;
+        }
+
+        //Static Functions
+        static bool isOverlapping(const TextBox& tbox, const uint16_t& screen_width){
+            return true;
         }
 };
