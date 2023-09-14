@@ -1,22 +1,23 @@
 #pragma once
 
-#include "../SFML/include/SFML/Graphics.hpp"
 #include "../SFML/include/SFML/Window/Mouse.hpp"
+#include "./SFMLTypes.hpp"
 #include <iostream>
 #include <functional>
+using namespace SFMLAliases;
 
 class WorldCoords{
-    std::function<sf::Vector2<int>(void)> worldPos;
+    std::function<vec2i(void)> worldPos;
     public:
         WorldCoords(){
-            worldPos = []() -> sf::Vector2<int> { return sf::Mouse::getPosition(); };
+            worldPos = []() -> vec2i { return sf::Mouse::getPosition(); };
         };
 
-        sf::Vector2<int> getWorldPos() const {
+        vec2i getWorldPos() const {
             return this->worldPos();
         }
 
-        static void convertWorldPosToText(const sf::Vector2<int>& pos, sf::Text& text){
+        static void convertWorldPosToText(const vec2i& pos, sf::Text& text){
             std::string str{"World Pos: "};
             str += std::to_string(pos.x) + ' ' + std::to_string(pos.y);
             text.setString(str);
