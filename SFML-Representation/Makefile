@@ -1,5 +1,3 @@
-# Makefile
-
 # Compiler settings
 CXX := g++
 CXXFLAGS := -std=c++17
@@ -7,6 +5,9 @@ CXXFLAGS := -std=c++17
 # Source files and object files
 SRCS := $(wildcard *.cpp)
 OBJS := $(SRCS:.cpp=.o)
+
+# Dependency files
+DEPS := $(OBJS:.o=.d)
 
 # Executable name
 EXECUTABLE := main.exe
@@ -30,8 +31,15 @@ all: $(EXECUTABLE)
 $(EXECUTABLE): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) $(LIB_DIRS) $(INCLUDE_HASHMAP) $^ -o $@ $(SFML_LIBRARIES)
 
+# Include dependency files
+-include $(DEPS)
+
+# Generate dependency files
+%.d: %.cpp
+	@$(CXX) $(CXXFLAGS) -MM -MT "$@ $(@:.d=.o)" $< -MF $@
+
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 clean:
-	$(RM) $(OBJS) $(EXECUTABLE)
+	$(RM) $(OBJS) $(DEPS) $(EXECUTABLE)

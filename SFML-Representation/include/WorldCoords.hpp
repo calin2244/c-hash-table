@@ -6,20 +6,22 @@
 #include <functional>
 using namespace SFMLAliases;
 
+// TODO: Useless, so I should probably scrap this
+
 class WorldCoords{
     std::function<vec2i(void)> worldPos;
-    public:
-        WorldCoords(){
-            worldPos = []() -> vec2i { return sf::Mouse::getPosition(); };
-        };
+public:
+    WorldCoords(){
+        worldPos = []() -> vec2i { return sf::Mouse::getPosition(); };
+    };
 
-        vec2i getWorldPos() const {
-            return this->worldPos();
-        }
+    vec2i getWorldPos() const {
+        return this->worldPos();
+    }
 
-        static void convertWorldPosToText(const vec2i& pos, sf::Text& text){
-            std::string str{"World Pos: "};
-            str += std::to_string(pos.x) + ' ' + std::to_string(pos.y);
-            text.setString(str);
-        }
+    static void convertWorldPosToText(const vec2i& pos, sf::Text& text){
+        std::string str{"World Pos: "};
+        str += std::to_string(pos.x) + ' ' + std::to_string(pos.y);
+        text.setString(str);
+    }
 };
