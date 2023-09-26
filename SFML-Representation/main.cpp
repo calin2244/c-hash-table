@@ -9,6 +9,11 @@
 #include <vector>
 #include <memory>
 
+#define INSERTION 0x01
+#define DELETION 0x02
+
+// TODO: If there is chaining, the bucket's value will be overwritten, Solution: Adauga un I(info) care cand hovered sa afiseze o lista cu nodurile chained
+
 void createBuckets(std::vector<TextBox>& buckets, std::unique_ptr<HashTable*>& ht, const font& font){
     if(buckets.size() != (*ht)->capacity)
         buckets.resize((*ht)->capacity);
@@ -24,7 +29,7 @@ void createBuckets(std::vector<TextBox>& buckets, std::unique_ptr<HashTable*>& h
                     {130, 95}, 
                     // Position Settings, 200 is the distance in pixels from the top of the screen until the first row
                     {50 + static_cast<float>(j) * 150.75f, 200 + static_cast<float>(i) * 145.75f}, 
-                    NULL_BOX_FILL, NULL_BOX_TEXT_COLOR, 2
+                    NULL_BOX_FILL, NULL_BOX_TEXT_COLOR, 2 
                     );
                 
                 // *Tombstone check for OPEN-ADDRESSING Collision Resolutions
@@ -45,8 +50,14 @@ void createBuckets(std::vector<TextBox>& buckets, std::unique_ptr<HashTable*>& h
 }
 
 // TODO: Implement, only update a bucket, do not recreate the whole vector of buckets
-void updateBucket(){
-
+void updateBucket(std::vector<TextBox>& buckets, const size_t idx, const font& font, uint16_t flag){
+    if(flag & INSERTION){
+        // TODO
+        return;
+    }else if(flag & DELETION){
+        buckets[idx].setOutlineColor(NULL_BOX_OUTLINE);
+        buckets[idx].writeHashTableText("", "NULL", idx, &font);
+    }
 }
 
 void renderBucketsToScreen(std::vector<TextBox>& buckets, renderWin& window){
@@ -60,18 +71,18 @@ void insertQueries(HashTable* ht){
     ht_insert(ht, "Tu", "Taurus", 6);
     ht_insert(ht, "El", "Gemini", 7);
     ht_insert(ht, "Ea", "Cancer", 7);
-    ht_insert(ht, "Noi", "Leo", 4);
-    ht_insert(ht, "Voi", "Virgo", 6);
-    ht_insert(ht, "Ei", "Libra", 6);
-    ht_insert(ht, "Ele", "Scorpio", 8);
-    ht_insert(ht, "Acela", "Capricorn", 10);
-    ht_insert(ht, "Ceva", "Aquarius", 8);
-    ht_insert(ht, "Altceva", "Pisces", 8);
-    ht_insert(ht, "Lorem", "Lorem Ipsum", 11);
-    ht_insert(ht, "RKey2", "Value2", 6); // Shorter key
-    ht_insert(ht, "Key3", "Value3", 5); // Shorter key
-    ht_insert(ht, "Key24", "Value3", 5); // Shorter key
-    ht_insert(ht, "Key6", "Value3", 5); // Shorter key
+    // ht_insert(ht, "Noi", "Leo", 4);
+    // ht_insert(ht, "Voi", "Virgo", 6);
+    // ht_insert(ht, "Ei", "Libra", 6);
+    // ht_insert(ht, "Ele", "Scorpio", 8);
+    // ht_insert(ht, "Acela", "Capricorn", 10);
+    // ht_insert(ht, "Ceva", "Aquarius", 8);
+    // ht_insert(ht, "Altceva", "Pisces", 8);
+    // ht_insert(ht, "Lorem", "Lorem Ipsum", 11);
+    // ht_insert(ht, "RKey2", "Value2", 6); // Shorter key
+    // ht_insert(ht, "Key3", "Value3", 5); // Shorter key
+    // ht_insert(ht, "Key24", "Value3", 5); // Shorter key
+    // ht_insert(ht, "Key6", "Value3", 5); // Shorter key
 }
 
 
@@ -99,8 +110,10 @@ int main(){
     Button clearButton({350, 30}, {100, 50}, josefinSansFontStyle, "Clear HT");
     Dropdown dropdown({50, 300}, {200, 100}, josefinSansFontStyle);
 
-    DynamicTextBox keyTextBox({50, 100}, {180, 50}, fJosefinSans, 28);
-    DynamicTextBox valueTextBox({350, 100}, {180, 50}, fJosefinSans, 28);
+    DynamicTextBox keyTextBox({50, 130}, {180, 50}, fJosefinSans, 28, "./sprites/clear-text.png");
+    DynamicTextBox valueTextBox({350, 130}, {180, 50}, fJosefinSans, 28, "./sprites/clear-text.png");
+    keyTextBox.setLabel("Key", josefinSansFontStyle, 20.f);
+    valueTextBox.setLabel("Value", josefinSansFontStyle, 20.f);
     std::vector<DynamicTextBox> textBoxes{ std::move(keyTextBox), std::move(valueTextBox) };
 
     while (window.isOpen()){
@@ -119,7 +132,7 @@ int main(){
                     break;
                 case event::TextEntered:
                     // Pass the text input event to the active text box (if any)
-                    for(auto& textBox : textBoxes){
+                    for(auto& textBox: textBoxes){
                         if(textBox.getIsActive()){
                             textBox.handleEvent(event, window);
                         }
@@ -127,11 +140,21 @@ int main(){
                     break;
                 case event::MouseButtonPressed:
                     // Check if any text box should be activated
-                    for(auto& textBox : textBoxes){
+                    for(auto& textBox: textBoxes){
                         if (textBox.containsPoint(mouse::getPosition(window).x, mouse::getPosition(window).y)) {
                             textBox.setActive(true);
                         } else {
                             textBox.setActive(false);
+                        }
+                    }
+                    break;
+                case event::KeyPressed:
+                    for(auto& textBox: textBoxes){
+                        if(textBox.getIsActive()){
+                            if(event.key.code == sf::Keyboard::Delete){
+                                textBox.clearTextBoxText();
+                                std::cout << textBox.getInputAsString() << '\n';
+                            }
                         }
                     }
                     break;
@@ -155,20 +178,25 @@ int main(){
         clearButton.renderToScreen(window);
 
         if(insertButton.is_clicked(window, CUSTOM_CYAN)){
-            const std::string_view& key = textBoxes[0].getInputAsString();
-            const std::string_view& value = textBoxes[1].getInputAsString();
-            const size_t valueLen = textBoxes[1].getInputLength();
-            ht_insert(*hash_t, key.data(), value.data(), valueLen + 1);
-            createBuckets(buckets, hash_t, fJosefinSans);
+            if(!textBoxes[0].isEmpty() && !textBoxes[1].isEmpty()){
+                const std::string_view& key = textBoxes[0].getInputAsString();
+                const std::string_view& value = textBoxes[1].getInputAsString();
+                const size_t valueLen = textBoxes[1].getInputLength();
+                ht_insert(*hash_t, key.data(), value.data(), valueLen + 1);
+                createBuckets(buckets, hash_t, fJosefinSans);
+                std::cout << (*hash_t)->hash_func(key.data(), (*hash_t)->capacity) << '\n';
+            }
         }
 
         if(deleteButton.is_clicked(window, CUSTOM_CYAN)){
-            if(!std::empty(textBoxes[0].getInputAsString())){
-                const size_t idx = (*hash_t)->hash_func(textBoxes[0].getInputAsCharArr(), (*hash_t)->capacity);
-                ht_remove(*hash_t, textBoxes[0].getInputAsCharArr());
-                buckets[idx].setOutlineColor(NULL_BOX_OUTLINE);
-                buckets[idx].writeHashTableText("", "NULL", idx, &fJosefinSans);
-                ht_print(*hash_t, print_string_string);
+            if(!textBoxes[0].isEmpty()){
+                const size_t idx = ht_remove(*hash_t, textBoxes[0].getInputAsCharArr());
+                if(idx != SSIZE_MAX){
+                    updateBucket(buckets, idx, fJosefinSans, DELETION);
+                    // std::cout << idx << '\n';
+                    // ht_print(*hash_t, print_string_string);
+                    // std::cout << '\n';
+                }
             }
         }
 
