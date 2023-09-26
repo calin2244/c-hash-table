@@ -5,6 +5,7 @@
 
 class Dropdown: public Button{
     std::vector<std::string> dropDownOptions;
+    std::string activeOption;
     bool isExpanded;
     
 public:
