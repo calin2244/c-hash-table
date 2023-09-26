@@ -5,6 +5,8 @@
 #include <string>
 using namespace SFMLAliases;
 
+// TODO?: Consider inheriting from TextBox to allow move somantics in the set text area and reusability of functions
+
 class Button{
     vec2i mousePos;
     TextBox button;
@@ -13,7 +15,7 @@ class Button{
 public:
     Button() = default;
     Button(const TextBox& button): button(button){}
-    Button(const std::string& buttonText, const vec2f& pos, const vec2f& size, const UIStyle& styleConfig) noexcept {
+    Button(const vec2f& pos, const vec2f& size, const UIStyle& styleConfig, const std::string& buttonText = std::string()){
         this->generateButton(buttonText, size, pos, styleConfig);
     }
 
@@ -22,7 +24,7 @@ public:
         button.writeValueText(buttonText, &styleConfig.font, styleConfig.text_color);
     }
     
-    void renderButtonToScreen(sf::RenderWindow& window) const noexcept{
+    void renderToScreen(sf::RenderWindow& window) const noexcept{
         this->button.renderToScreen(window);
     }
 
@@ -50,7 +52,7 @@ public:
         
         if(mouse::isButtonPressed(mouse::Left)) {
             if(hovered && !this->buttonClicked) {
-                std::cout << "clicked\n";
+                // std::cout << "clicked\n";
                 this->buttonClicked = true;
                 return true;
             }
@@ -60,5 +62,10 @@ public:
         }
 
         return false;
+    }
+
+    //Setters
+    void setText(const std::string_view text, const UIStyle& styleConfig){
+        button.writeValueText(text, &styleConfig.font, styleConfig.text_color);
     }
 };

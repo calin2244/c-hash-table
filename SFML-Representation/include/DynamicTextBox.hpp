@@ -115,8 +115,12 @@ public:
     }
 
     // Getters
-    std::string getInputString() const noexcept {
+    std::string getInputAsString() const noexcept {
         return this->input;
+    }
+
+    const char* getInputAsCharArr() const noexcept {
+        return this->input.c_str();
     }
 
     size_t getInputLength() const noexcept {
