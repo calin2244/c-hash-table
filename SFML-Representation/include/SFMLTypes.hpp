@@ -15,6 +15,8 @@ namespace SFMLAliases{
     using sfclock = sf::Clock;
     using renderWin = sf::RenderWindow;
     using sfview = sf::View;
+    using sprite = sf::Sprite;
+    using texture = sf::Texture;
 }
 
 struct UIStyle{
