@@ -262,9 +262,7 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
         ht_resize(ht, ht->capacity * INCREMENTAL_RESIZING + ht->capacity);
         idx = ht->hash_func(key, ht->capacity);
     }
-
     ht->load_factor = (float)ht->size / (float)ht->capacity;
-
     
     if(ht->coll_resolution == CHAINING){
         handle_collision_chaining(ht, idx, key, val, val_size);
@@ -318,8 +316,10 @@ bool ht_has_key(const HashTable* ht, const char* key){
     * It returns 1 if it was able to find the item and remove it
     * else it returns 0 (no item with that key was found)
 */
-
-bool ht_remove(HashTable* ht, const char* key) {
+/*
+    *NEW!! This will now return the index from where it removed or SSIZE_MAX
+*/
+size_t ht_remove(HashTable* ht, const char* key) {
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item** curr_item = &ht->buckets[idx];
 
@@ -338,7 +338,7 @@ bool ht_remove(HashTable* ht, const char* key) {
                 free_ht_item(curr);
 
                 // Return, we have deleted the item
-                return true;
+                return idx;
             }
 
             curr_item = &(*curr_item)->next;
@@ -355,18 +355,20 @@ bool ht_remove(HashTable* ht, const char* key) {
                 item->is_tombstone = true;
                 ht->size--;
 
-                return true;
+                printf("Am sters de la indexul: %ld\n", idx);
+
+                return idx;
             }
 
             idx = (idx + 1) % ht->capacity;
 
             if(idx == start_idx){
                 // Reached starting index, item not found
-                return false;
+                return SSIZE_MAX;
             }
         }
 
-        return false;
+        return SSIZE_MAX;
     }
     else if(ht->coll_resolution == QUADRATIC_PROBING){
         size_t initial_idx = idx;
@@ -375,23 +377,23 @@ bool ht_remove(HashTable* ht, const char* key) {
         while(ht->buckets[idx]){
             Ht_Item* item = ht->buckets[idx];
 
-            if(!item->is_tombstone && strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
+            if(!item->is_tombstone && strcmp((char*)(ht->buckets[idx])->key, key) == 0){
                 free(item->key);
                 free(item->val);
                 item->is_tombstone = true;
                 ht->size--;          
                 
-                return true;
+                return idx;
             }
 
             idx = (initial_idx + (size_t)(curr_power * curr_power)) % ht->capacity;
             curr_power++;
         }
 
-        return false;
+        return SSIZE_MAX;
     }
 
-    return false;
+    return SSIZE_MAX;
 }
 
 /*
