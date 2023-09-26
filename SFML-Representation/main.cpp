@@ -48,33 +48,24 @@ void renderBucketsToScreen(std::vector<TextBox>& boxes, renderWin& window){
     }
 }
 
-void insertQueries(std::unique_ptr<HashTable*>& hash_t){
-    ht_insert(*hash_t, "salut:D", "Regele", 7);
-    ht_insert(*hash_t, "CalinRege", "Apricot", 7);
-    ht_insert(*hash_t, "Rares Boss", "rege", 5);
-    ht_insert(*hash_t, "Dejan", "sall", 5);
-    ht_insert(*hash_t, "Aries", "Glitter", 8);
-    ht_insert(*hash_t, "AriesWow", "Glitter", 8);
-    ht_insert(*hash_t, "Amy's Grave", "Glitter", 8);
-    ht_insert(*hash_t, "90Days", "Glitter", 8);
-}
-
 int main(){
-    renderWin window(sf::VideoMode(820, 600), "HashTable Illustration");
+    renderWin window(sf::VideoMode(820, 900), "HashTable Illustration");
     sfview view(window.getDefaultView());
 
     std::unique_ptr<HashTable*> hash_t = std::make_unique<HashTable*>(ht_create(10, fnv_hash_func, LINEAR_PROBING));
     std::vector<TextBox> boxes((*hash_t)->capacity , TextBox());
-    // insertQueries(hash_t);
 
     font mJosefinSans;
     if(!mJosefinSans.loadFromFile("./Fonts/JosefinSans-Bold.ttf")){
         std::cout << "Couldn't load font from disk\n";
         return -1;
     }
+    UIStyle josefinSansFontStyle = {
+        .font = mJosefinSans
+    };
 
     createBuckets(boxes, hash_t, mJosefinSans);
-    Button insertButton({100, 50}, {50, 30}, mJosefinSans);
+    Button insertButton("Insert", {50, 30}, {100, 50}, josefinSansFontStyle);
     DynamicTextBox keyTextBox({50, 100}, {180, 50}, mJosefinSans, 28);
     DynamicTextBox valueTextBox({350, 100}, {180, 50}, mJosefinSans, 28);
     std::vector<DynamicTextBox> textBoxes{ std::move(keyTextBox), std::move(valueTextBox) };
@@ -84,6 +75,7 @@ int main(){
         while (window.pollEvent(event)){
             switch(event.type){
                 case event::Closed:
+                    free_ht(&(*hash_t));
                     window.close();
                     break;
                 case event::MouseWheelScrolled:

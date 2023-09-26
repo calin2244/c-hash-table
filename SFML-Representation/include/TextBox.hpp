@@ -1,9 +1,7 @@
 #pragma once
-#include <stdint.h>
 #include "./SFMLTypes.hpp"
-#include <functional>
+#include <stdint.h>
 #include <string>
-#include <iostream>
 using namespace SFMLAliases;
 
 class TextBox{
@@ -130,7 +128,7 @@ public:
 
     // Getters
     vec2f getPosition() const noexcept{
-        return { this->rectangle.getPosition().x, this->rectangle.getPosition().y };
+        return rectangle.getPosition();
     }
 
     vec2f getSize() const noexcept{

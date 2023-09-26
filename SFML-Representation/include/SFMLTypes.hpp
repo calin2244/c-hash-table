@@ -16,3 +16,10 @@ namespace SFMLAliases{
     using renderWin = sf::RenderWindow;
     using sfview = sf::View;
 }
+
+struct UIStyle{
+    sf::Font font;
+    sf::Color text_color = sf::Color::Black;
+    sf::Color outline_color = sf::Color::Red;
+    sf::Color fill_color = sf::Color::White;
+};
