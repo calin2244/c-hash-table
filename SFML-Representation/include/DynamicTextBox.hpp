@@ -1,5 +1,4 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include <string>
 #include "CustomColors.hpp"
 
@@ -8,66 +7,93 @@
 // TODO: Add a LABEL
 
 class DynamicTextBox{
-    sfrectangle text_box;
+    sfrectangle textBox;
     sftext text;
+    sftext label;
     sfclock cursorBlinkTimer;
     sfrectangle cursor;
+    sprite clearTextSprite;
+    texture clearTextSpriteTexture;
     std::string input;
     uint16_t limit;
     uint16_t cursorPos;
+    uint16_t characterSize;
     bool isCursorVisible;
     bool isActive;
 
-public:
-    DynamicTextBox(const vec2f& position, const vec2f& size, sf::Font& font, unsigned int characterSize) noexcept{
-        text_box.setPosition(position.x, position.y);
-        text_box.setSize(size);
-        text_box.setFillColor(color::White);
-        text_box.setOutlineColor(color::Black);
-        text_box.setOutlineThickness(2.0f);
-
-        text.setFont(font);
-        text.setCharacterSize(characterSize);
-        text.setFillColor(color::Black);
-
-        // Set the text position relative to the text_box
-        text.setPosition(position.x + 5.0f, position.y + size.y / 2.0f - characterSize / 2.0f);
-
-        // Set the cursor as a horizontal bar
-        cursor.setSize(vec2f(2.0f, static_cast<float>(characterSize)));
-        cursor.setFillColor(color::Black);
-
-        limit = static_cast<uint16_t>(size.x / (characterSize / 2 )) - 1; // Adjust the limit based on the width
-
-        isCursorVisible = true;
-        cursorBlinkTimer.restart();
-        cursorPos = 0; 
-        isActive = false;
+    void setClearSpriteToEndOfTextBox() noexcept{
+        this->clearTextSprite.setPosition(text.getPosition().x + 140, text.getPosition().y);
+        this->clearTextSprite.setScale({.06f, .06f});
     }
 
-    void renderToScreen(sf::RenderWindow& window) noexcept{
-        text_box.setOutlineColor(isActive ? CUSTOM_PURPLE : color::Black); 
-        text_box.setOutlineThickness(isActive ? 4.0f : 0);           
-        window.draw(text_box);
-        window.draw(text);
 
-        if(isCursorVisible && isActive){
-            window.draw(cursor);
+public:
+    DynamicTextBox(const vec2f& position, const vec2f& size, sf::Font& font, 
+                  uint16_t characterSize, const std::string_view texturePath = std::string()): characterSize(characterSize){
+        this->textBox.setPosition(position.x, position.y);
+        this->textBox.setSize(size);
+        this->textBox.setFillColor(color::White);
+        this->textBox.setOutlineColor(color::Black);
+        this->textBox.setOutlineThickness(2.0f);
+
+        this->text.setFont(font);
+        this->text.setCharacterSize(characterSize);
+        this->text.setFillColor(color::Black);
+
+        // Set the text position relative to the textBox
+        this->text.setPosition(position.x + 5.0f, position.y + size.y / 2.0f - characterSize / 2.0f);
+
+        // Set the cursor as a horizontal bar
+        this->cursor.setSize(vec2f(2.0f, static_cast<float>(characterSize)));
+        this->cursor.setFillColor(color::Black);
+
+        this->limit = static_cast<uint16_t>(size.x / (characterSize / 2 )) - 1; // Adjust the limit based on the width
+
+        if(this->clearTextSpriteTexture.loadFromFile(texturePath.data())){
+            this->clearTextSprite.setTexture(clearTextSpriteTexture);
+            setClearSpriteToEndOfTextBox();
+        }
+
+        this->isCursorVisible = true;
+        this->cursorBlinkTimer.restart();
+        this->cursorPos = 0; 
+        this->isActive = false;
+    }
+
+    void renderToScreen(renderWin& window) noexcept{
+        this->textBox.setOutlineColor(isActive ? CUSTOM_PURPLE : color::Black); 
+        this->textBox.setOutlineThickness(isActive ? 4.0f : 0);           
+        window.draw(this->textBox);
+        window.draw(this->text);
+        window.draw(this->label);
+        window.draw(this->clearTextSprite);
+
+        if(this->isCursorVisible && this->isActive){
+            window.draw(this->cursor);
         }
     }
 
     void setPosition(float x, float y) noexcept{
-        text_box.setPosition(x, y);
-        text.setPosition(x + 5.0f, y + text_box.getSize().y / 2.0f - text.getCharacterSize() / 2.0f);
+        this->textBox.setPosition(x, y);
+        this->text.setPosition(x + 5.0f, y + textBox.getSize().y / 2.0f - text.getCharacterSize() / 2.0f);
 
         // Adjust the cursor position to be aligned with the text
-        cursor.setPosition(text.getPosition().x + cursorPos, text.getPosition().y);
+        this->cursor.setPosition(text.getPosition().x + cursorPos, text.getPosition().y);
+    }
+
+    void setLabel(const std::string_view labelName, const UIStyle& styleConfig, const float yOffset = 0.0f) noexcept{
+        this->label = { labelName.data(), styleConfig.font };
+        this->label.setCharacterSize(this->characterSize / 2);
+        this->label.setFillColor(styleConfig.fill_color);
+        this->label.setOutlineColor(styleConfig.outline_color);
+        sf::FloatRect textBoxBounds = textBox.getGlobalBounds();
+        this->label.setPosition(textBoxBounds.left, textBoxBounds.top - yOffset);
     }
 
 
     //? Might delete unicode support, as my C-HashTable implementation doesn't support ATM unicode
     void handleEvent(event event, renderWin& window){
-        if(!isActive){
+        if(!this->isActive){
             return; 
         }
 
@@ -88,9 +114,9 @@ public:
     }
 
     void updateText() noexcept{
-        text.setString(input);
+        this->text.setString(input);
         // 4 pixels offset so the bar isn't sticked to the text
-        cursor.setPosition(text.getPosition().x + text.getLocalBounds().width + 4.0f, text.getPosition().y);
+        this->cursor.setPosition(text.getPosition().x + text.getLocalBounds().width + 4.0f, text.getPosition().y);
     }
 
     void setActive(bool active) noexcept{
@@ -110,8 +136,19 @@ public:
     }
 
     bool containsPoint(float x, float y) const noexcept {
-        sf::FloatRect bounds = text_box.getGlobalBounds();
+        sf::FloatRect bounds = textBox.getGlobalBounds();
         return bounds.contains(x, y);
+    }
+
+    bool isEmpty() const noexcept{
+        return std::empty(this->input);
+    }
+
+    void clearTextBoxText() noexcept{
+        this->input.clear();
+        this->text.setString("");
+        this->cursorPos = 0;
+        this->cursor.setPosition(text.getPosition());
     }
 
     // Getters
