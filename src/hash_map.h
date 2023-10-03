@@ -26,7 +26,7 @@
 typedef enum{
     CHAINING = 0,
     LINEAR_PROBING,
-    QUADRATIC_PROBING, // TODO: Add tombstone Logic
+    QUADRATIC_PROBING, 
     ROBIN_HOOD // TODO: Implemnt this
 }CollisionResolution;
 
@@ -84,11 +84,14 @@ void free_ht(HashTable** ht);
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size);
 bool ht_has_key(const HashTable* ht, const char* key);
 size_t ht_remove(HashTable* ht, const char* key);
+void ht_bulk_remove(HashTable* ht, const char** keys, size_t rows);
 void* ht_get_item(HashTable* ht, const char* key);
 Ht_Item* ht_item_create(const char* key, const void* val, size_t val_size);
 void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_size);
 void free_ht_item(Ht_Item* item);
-void clear_ht(HashTable* ht);
+void ht_clear(HashTable* ht);
 bool ht_purge_slot(HashTable* ht, size_t idx);
+// TODO
+void ht_bulk_insert(HashTable* ht, const char** keys, const void** values, size_t* val_size);
 
 #endif // HASH_TABLE_H

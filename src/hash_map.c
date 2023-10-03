@@ -275,6 +275,14 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
     }
 }
 
+/*
+    * NEW! Bulk Insert
+    TODO
+*/
+void ht_bulk_insert(HashTable* ht, const char** keys, const void** values, size_t* val_size){
+    return;
+}
+
 // TODO: add tombstone logic
 bool ht_has_key(const HashTable* ht, const char* key){
     size_t idx = ht->hash_func(key, ht->capacity);
@@ -317,7 +325,7 @@ bool ht_has_key(const HashTable* ht, const char* key){
     * else it returns 0 (no item with that key was found)
 */
 /*
-    *NEW!! This will now return the index from where it removed or SSIZE_MAX
+    *NEW!! This will now return the index from where it removed or SIZE_MAX
 */
 size_t ht_remove(HashTable* ht, const char* key) {
     size_t idx = ht->hash_func(key, ht->capacity);
@@ -355,7 +363,7 @@ size_t ht_remove(HashTable* ht, const char* key) {
                 item->is_tombstone = true;
                 ht->size--;
 
-                printf("Am sters de la indexul: %ld\n", idx);
+                // printf("Am sters de la indexul: %ld\n", idx);
 
                 return idx;
             }
@@ -364,11 +372,11 @@ size_t ht_remove(HashTable* ht, const char* key) {
 
             if(idx == start_idx){
                 // Reached starting index, item not found
-                return SSIZE_MAX;
+                return SIZE_MAX;
             }
         }
 
-        return SSIZE_MAX;
+        return SIZE_MAX;
     }
     else if(ht->coll_resolution == QUADRATIC_PROBING){
         size_t initial_idx = idx;
@@ -390,10 +398,16 @@ size_t ht_remove(HashTable* ht, const char* key) {
             curr_power++;
         }
 
-        return SSIZE_MAX;
+        return SIZE_MAX;
     }
 
-    return SSIZE_MAX;
+    return SIZE_MAX;
+}
+
+void ht_bulk_remove(HashTable* ht, const char** keys, size_t rows){
+    for(size_t row = 0; row < rows; ++row){
+        (void)ht_remove(ht, keys[row]);
+    }
 }
 
 /*
@@ -507,7 +521,7 @@ void free_ht(HashTable** ht){
     *ht = NULL;
 }
 
-void clear_ht(HashTable* ht){
+void ht_clear(HashTable* ht){
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item** item = &ht->buckets[i];
 
@@ -537,16 +551,13 @@ void clear_ht(HashTable* ht){
     * Will return false otherwise(slot is already NULL)
 */
 bool ht_purge_slot(HashTable* ht, size_t idx){
-    if(ht->buckets[idx] && ht->buckets[idx]->is_tombstone){
-        free(ht->buckets[idx]);
-        ht->buckets[idx] = NULL;
-        return true;
-    }else if(ht->buckets[idx]){
-        free(ht->buckets[idx]);
+    if(ht->buckets[idx] || (ht->buckets[idx] && !ht->buckets[idx]->is_tombstone)){
+        printf("%s\n", "Am intrat");
+        free_ht_item(ht->buckets[idx]);
         ht->buckets[idx] = NULL;
         return true;
     }
 
     // In case the slot is NULL
-    return NULL;
+    return false;
 }
