@@ -54,6 +54,32 @@ size_t jenkins_hash_func(const char* key, size_t capacity){
 
 // END OF HASHING
 
+// HELPER FUNCTIONS
+bool isPrime(size_t num){
+    if(num < 2)
+        return false;
+    else if(num == 2)
+        return true;
+    else if(num % 2 == 0)
+        return false;
+
+    for(size_t d = 3; d * d <= num; d += 2){
+        if(num % d == 0)
+            return false;
+    }
+
+    return true;
+}
+
+size_t generateNextGreaterPrimeNumber(size_t num){
+    while(!isPrime(num))
+        num++;
+
+    return num;
+}
+
+// END OF HELPER FUNCTIONS
+
 HashTable* ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), CollisionResolution coll_res){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
 
@@ -90,9 +116,7 @@ void ht_resize(HashTable* ht, size_t new_capacity){
         while(item){
             ht_insert(new_ht, item->key, item->val, item->val_size);
             Ht_Item* next = item->next;
-            free(item->key);
-            free(item->val);
-            free(item);
+            free_ht_item(item);
             item = next;
         }
     }
@@ -255,11 +279,11 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
         * so the THRESHOLD for linear-probing HashTable will be a little lower 
     */
     if(ht->coll_resolution == CHAINING && ht->load_factor > CHAINING_THRESHOLD){
-        ht_resize(ht, ht->capacity * INCREMENTAL_RESIZING + ht->capacity);
+        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
         idx = ht->hash_func(key, ht->capacity);
     }
     else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= OA_THRESHOLD){
-        ht_resize(ht, ht->capacity * INCREMENTAL_RESIZING + ht->capacity);
+        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
         idx = ht->hash_func(key, ht->capacity);
     }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
@@ -283,14 +307,13 @@ void ht_bulk_insert(HashTable* ht, const char** keys, const void** values, size_
     return;
 }
 
-// TODO: add tombstone logic
 bool ht_has_key(const HashTable* ht, const char* key){
     size_t idx = ht->hash_func(key, ht->capacity);
     
     if(ht->coll_resolution == CHAINING){
         Ht_Item* item = ht->buckets[idx];
         while(item){
-            if(strcmp((const char*)item->key, (const char*)key) == 0){
+            if(strcmp(item->key, key) == 0){
                 return true; // Key found
             }
             item = item->next;
@@ -298,21 +321,17 @@ bool ht_has_key(const HashTable* ht, const char* key){
 
         // Key not found
         return false; 
-    }else if(ht->coll_resolution == LINEAR_PROBING){
+    }else if(ht->coll_resolution >= LINEAR_PROBING){
         while(ht->buckets[idx]){
             Ht_Item* item = ht->buckets[idx];
 
-            if(!item->is_tombstone && strcmp((const char*)item->key, (const char*)key) == 0)
+            if(!item->is_tombstone && strcmp(item->key, key) == 0)
                 return true;
-            else return false;
             
             idx = (idx + 1) % ht->capacity;
         }
 
         // No key has been found
-        return false;
-    }else if(ht->coll_resolution == QUADRATIC_PROBING){
-        // to do
         return false;
     }
 
@@ -493,7 +512,6 @@ void free_ht_item(Ht_Item* item){
 }
 
 
-// TODO: size checking
 void free_ht(HashTable** ht){
     for(size_t i = 0; i < (*ht)->capacity; ++i){
         Ht_Item** item = &(*ht)->buckets[i];
@@ -552,7 +570,6 @@ void ht_clear(HashTable* ht){
 */
 bool ht_purge_slot(HashTable* ht, size_t idx){
     if(ht->buckets[idx] || (ht->buckets[idx] && !ht->buckets[idx]->is_tombstone)){
-        printf("%s\n", "Am intrat");
         free_ht_item(ht->buckets[idx]);
         ht->buckets[idx] = NULL;
         return true;

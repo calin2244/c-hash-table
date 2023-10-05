@@ -94,4 +94,8 @@ bool ht_purge_slot(HashTable* ht, size_t idx);
 // TODO
 void ht_bulk_insert(HashTable* ht, const char** keys, const void** values, size_t* val_size);
 
+// Helper Functions
+bool isPrime(size_t num);
+size_t generateNextGreaterPrimeNumber(size_t num);
+
 #endif // HASH_TABLE_H
