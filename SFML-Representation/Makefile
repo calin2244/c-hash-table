@@ -3,8 +3,8 @@ CXX := g++
 CXXFLAGS := -std=c++17
 
 # Source files and object files
-SRCS := $(wildcard *.cpp)
-OBJS := $(SRCS:.cpp=.o)
+SRCS := $(wildcard *.cpp) $(wildcard src/*.cpp)
+OBJS := $(patsubst %.cpp,%.o,$(SRCS))
 
 # Dependency files
 DEPS := $(OBJS:.o=.d)
@@ -42,4 +42,4 @@ $(EXECUTABLE): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 clean:
-	$(RM) $(OBJS) $(DEPS) $(EXECUTABLE)
+	@rm -f $(OBJS) $(DEPS) $(EXECUTABLE)
