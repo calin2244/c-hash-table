@@ -10,7 +10,7 @@
 
 #define CAPACITY 100 // Table Size
 #define CHAINING_THRESHOLD 0.7f
-#define OA_THRESHOLD 0.45f
+#define OA_THRESHOLD 0.55f
 #define INCREMENTAL_RESIZING 0.5f
 // OA = Open-Addressing, so for both LP and QP
 
