@@ -1,13 +1,14 @@
-#include "./include/WorldCoords.hpp"
 #include "./include/TextBox.hpp"
 #include "./include/Button.hpp"
 #include "./include/DynamicTextBox.hpp"
 #include "./include/Dropdown.hpp"
 #include "./include/CustomColors.hpp"
+#include "./include/FontManager.hpp"
 #include "../src/hash_map.h"
 #include "../src/hash_utils.h"
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #define INSERTION 0x01
 #define DELETION 0x02
@@ -38,11 +39,11 @@ void createBuckets(std::vector<TextBox>& buckets, std::unique_ptr<HashTable*>& h
                     buckets[idx].writeHashTableText(
                         "K: " + std::string(static_cast<char*>((*ht)->buckets[idx]->key)), 
                         "V: " + std::string(static_cast<char*>((*ht)->buckets[idx]->val)), idx, 
-                        &font, color::Yellow, CUSTOM_CYAN, CUSTOM_PURPLE   
+                        font, color::Yellow, CUSTOM_CYAN, CUSTOM_PURPLE   
                     );
                 }else{
                     buckets[idx].setOutlineColor(NULL_BOX_OUTLINE);
-                    buckets[idx].writeHashTableText("", "NULL", idx, &font);
+                    buckets[idx].writeHashTableText("", "NULL", idx, font);
                 }
             }
         }
@@ -50,73 +51,70 @@ void createBuckets(std::vector<TextBox>& buckets, std::unique_ptr<HashTable*>& h
 }
 
 // TODO: Implement, only update a bucket, do not recreate the whole vector of buckets
-void updateBucket(std::vector<TextBox>& buckets, const size_t idx, const font& font, uint16_t flag){
+inline void updateBucket(std::vector<TextBox>& buckets, const size_t idx, const font& font, uint16_t flag){
     if(flag & INSERTION){
         // TODO
         return;
     }else if(flag & DELETION){
         buckets[idx].setOutlineColor(NULL_BOX_OUTLINE);
-        buckets[idx].writeHashTableText("", "NULL", idx, &font);
+        buckets[idx].writeHashTableText("", "NULL", idx, font);
     }
 }
 
-void renderBucketsToScreen(std::vector<TextBox>& buckets, renderWin& window){
+inline void renderBucketsToScreen(std::vector<TextBox>& buckets, renderWin& window){
     for(auto& box: buckets){
         box.renderToScreen(window);
     }
 }
 
-void insertQueries(HashTable* ht){
-    ht_insert(ht, "Eu", "Aries", 5);
-    ht_insert(ht, "Tu", "Taurus", 6);
-    ht_insert(ht, "El", "Gemini", 7);
-    ht_insert(ht, "Ea", "Cancer", 7);
-    // ht_insert(ht, "Noi", "Leo", 4);
-    // ht_insert(ht, "Voi", "Virgo", 6);
-    // ht_insert(ht, "Ei", "Libra", 6);
-    // ht_insert(ht, "Ele", "Scorpio", 8);
-    // ht_insert(ht, "Acela", "Capricorn", 10);
-    // ht_insert(ht, "Ceva", "Aquarius", 8);
-    // ht_insert(ht, "Altceva", "Pisces", 8);
-    // ht_insert(ht, "Lorem", "Lorem Ipsum", 11);
-    // ht_insert(ht, "RKey2", "Value2", 6); // Shorter key
-    // ht_insert(ht, "Key3", "Value3", 5); // Shorter key
-    // ht_insert(ht, "Key24", "Value3", 5); // Shorter key
-    // ht_insert(ht, "Key6", "Value3", 5); // Shorter key
+template <typename... Buttons>
+inline void renderActionButtonsToScreen(renderWin& window, const Buttons&... buttons){
+    (buttons.renderToScreen(window), ...);
 }
 
+inline void insertQueries(HashTable* ht){
+    ht_insert(ht, "Eu", "Aries", 6);
+    ht_insert(ht, "Tu", "Taurus", 7);
+    ht_insert(ht, "El", "Gemini", 8);
+    ht_insert(ht, "Ea", "Cancer", 8);
+    // ht_insert(ht, "Noi", "Leo", 4);
+    // ht_insert(ht, "Voi", "Virgo", 6);
+}
 
 int main(){
+    // Creating the Window
     renderWin window(sf::VideoMode(820, 900), "HashTable Illustration");
     sfview view(window.getDefaultView());
 
+    // Loading the font from disk
+    FontManager& fontManager = FontManager::getInstance();
+    fontManager.loadFont("josefin-sans-bold", "./Fonts/JosefinSans-Bold.ttf");
+    fontManager.loadFont("roman-bold", "./Fonts/times_new_roman_bold.ttf");
+    font& appFont = fontManager.getFont("josefin-sans-bold");
+
+    // Creating the buckets
     std::unique_ptr<HashTable*> hash_t = std::make_unique<HashTable*>(ht_create(10, fnv_hash_func, LINEAR_PROBING));
     std::vector<TextBox> buckets((*hash_t)->capacity , TextBox());
-
-    font fJosefinSans;
-    if(!fJosefinSans.loadFromFile("./Fonts/JosefinSans-Bold.ttf")){
-        std::cout << "Couldn't load font from disk\n";
-        return -1;
-    }
-    UIStyle josefinSansFontStyle = {
-        .font = fJosefinSans
-    };
+    
+    // Define custom UIStyle elements
+    UIStyle josefinSansFontStyle{appFont};
+    UIStyle actionButtonsStyle{appFont, color::Black, color::White, CUSTOM_PURPLE};
 
     insertQueries(*hash_t);
 
-    createBuckets(buckets, hash_t, fJosefinSans);
-    Button insertButton({50, 30}, {100, 50}, josefinSansFontStyle, "Insert");
-    Button deleteButton({200, 30}, {100, 50}, josefinSansFontStyle, "Delete");
-    Button clearButton({350, 30}, {100, 50}, josefinSansFontStyle, "Clear HT");
-    Dropdown dropdown({50, 300}, {200, 100}, josefinSansFontStyle);
+    createBuckets(buckets, hash_t, appFont);
+    Button insertButton({50, 30}, {80, 40}, actionButtonsStyle, "Insert", 16);
+    Button deleteButton({150, 30}, {80, 40}, actionButtonsStyle, "Delete", 16);
+    Button clearButton({250, 30}, {80, 40}, actionButtonsStyle, "Clear HT", 16);
+    // Dropdown dropdown({350, 30}, {120, 40}, josefinSansFontStyle, {"Wow", "Lawl"});
 
-    DynamicTextBox keyTextBox({50, 130}, {180, 50}, fJosefinSans, 28, "./sprites/clear-text.png");
-    DynamicTextBox valueTextBox({350, 130}, {180, 50}, fJosefinSans, 28, "./sprites/clear-text.png");
-    keyTextBox.setLabel("Key", josefinSansFontStyle, 20.f);
-    valueTextBox.setLabel("Value", josefinSansFontStyle, 20.f);
-    std::vector<DynamicTextBox> textBoxes{ std::move(keyTextBox), std::move(valueTextBox) };
+    std::vector<DynamicTextBox> textBoxes{};
+    textBoxes.emplace_back(DynamicTextBox{{50, 130}, {180, 50}, appFont, 28, "./sprites/clear-text.png"});
+    textBoxes.emplace_back(DynamicTextBox{{350, 130}, {180, 50}, appFont, 28, "./sprites/clear-text.png"});
+    textBoxes[0].setLabel("Key", josefinSansFontStyle, 20.f);
+    textBoxes[1].setLabel("Value", josefinSansFontStyle, 20.f);
 
-    while (window.isOpen()){
+    while(window.isOpen()){
         event event;
         while (window.pollEvent(event)){
             switch(event.type){
@@ -153,7 +151,6 @@ int main(){
                         if(textBox.getIsActive()){
                             if(event.key.code == sf::Keyboard::Delete){
                                 textBox.clearTextBoxText();
-                                std::cout << textBox.getInputAsString() << '\n';
                             }
                         }
                     }
@@ -172,40 +169,35 @@ int main(){
 
         // Render HashTable's Buckets to screen
         renderBucketsToScreen(buckets, window);
-
-        insertButton.renderToScreen(window);
-        deleteButton.renderToScreen(window);
-        clearButton.renderToScreen(window);
+        renderActionButtonsToScreen<Button>(window, insertButton, deleteButton, clearButton);
+        // dropdown.renderToScreen(window);
 
         if(insertButton.is_clicked(window, CUSTOM_CYAN)){
+            appFont.loadFromFile("./Fonts/JosefinSans-Bold.ttf");
             if(!textBoxes[0].isEmpty() && !textBoxes[1].isEmpty()){
                 const std::string_view& key = textBoxes[0].getInputAsString();
                 const std::string_view& value = textBoxes[1].getInputAsString();
                 const size_t valueLen = textBoxes[1].getInputLength();
                 ht_insert(*hash_t, key.data(), value.data(), valueLen + 1);
-                createBuckets(buckets, hash_t, fJosefinSans);
+                createBuckets(buckets, hash_t, appFont);
                 std::cout << (*hash_t)->hash_func(key.data(), (*hash_t)->capacity) << '\n';
             }
         }
 
         if(deleteButton.is_clicked(window, CUSTOM_CYAN)){
+            appFont = fontManager.getFont("roman-bold"); 
             if(!textBoxes[0].isEmpty()){
                 const size_t idx = ht_remove(*hash_t, textBoxes[0].getInputAsCharArr());
-                if(idx != SSIZE_MAX){
-                    updateBucket(buckets, idx, fJosefinSans, DELETION);
-                    // std::cout << idx << '\n';
-                    // ht_print(*hash_t, print_string_string);
-                    // std::cout << '\n';
+                if(idx != SIZE_MAX){
+                    updateBucket(buckets, idx, appFont, DELETION);
                 }
             }
         }
 
         if(clearButton.is_clicked(window, CUSTOM_CYAN)){
-            clear_ht(*hash_t);
-            createBuckets(buckets, hash_t, fJosefinSans);
+            ht_clear(*hash_t);
+            createBuckets(buckets, hash_t, appFont);
         }
-
-        // dropdown.renderToScreen(window);
 
         window.display();
     }
