@@ -55,7 +55,7 @@ void DynamicTextBox::setPosition(float x, float y) noexcept{
 
 void DynamicTextBox::setLabel(const std::string_view labelName, const UIStyle& styleConfig, const float yOffset) noexcept{
     this->label = { labelName.data(), styleConfig.font };
-    this->label.setCharacterSize(this->characterSize / 2);
+    this->label.setCharacterSize(this->characterSize / 1.6f);
     this->label.setFillColor(styleConfig.fill_color);
     this->label.setOutlineColor(styleConfig.outline_color);
     sf::FloatRect textBoxBounds = textBox.getGlobalBounds();

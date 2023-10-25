@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include <string>
 
-TextBox::TextBox(const vec2f& size) noexcept: height(size.x), width(size.y){}
+TextBox::TextBox() = default;
+
+TextBox::TextBox(font* font) noexcept: m_font(font){}
 
 TextBox::TextBox(const TextBox& textBox) noexcept{
     this->rectangle = textBox.rectangle;
@@ -49,13 +51,12 @@ void TextBox::renderToScreen(renderWin& window) const noexcept{
     window.draw(this->hash);
 }
 
-void TextBox::writeHashTableText(const std::string_view key, const std::string_view val, 
-    const size_t hash, const font& font, 
+void TextBox::writeHashTableText(const std::string_view key, const std::string_view val, const size_t hash, 
     const color& key_color, const color& value_color, const color& hash_color) noexcept{
 
-    this->keyText = {key.data(), font, 16};
-    this->valueText = {val.data(), font, 16};
-    this->hash = {std::to_string(hash), font, 18};
+    this->keyText = {key.data(), *m_font, 16};
+    this->valueText = {val.data(), *m_font, 16};
+    this->hash = {std::to_string(hash), *m_font, 18};
 
     vec2f centerPosVal = TextBox::getCenterOfRectangle(this->valueText, this->rectangle);
     vec2f centerPosKey = TextBox::getCenterOfRectangle(this->keyText, this->rectangle);
@@ -69,10 +70,10 @@ void TextBox::writeHashTableText(const std::string_view key, const std::string_v
     this->hash.setFillColor(hash_color);
 }
 
-void TextBox::writeValueText(const std::string_view valText, const font& font,
+void TextBox::writeValueText(const std::string_view valText,
                     const color& valColor, uint16_t characterSize){
 
-    this->valueText = {valText.data(), font, 18};
+    this->valueText = {valText.data(), *m_font, 18};
     this->valueText.setCharacterSize(characterSize);
 
     vec2f centerValKey = TextBox::getCenterOfRectangle(this->valueText, this->rectangle);
