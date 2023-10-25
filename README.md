@@ -121,7 +121,7 @@ Visualization can make understanding and debugging a hash table much more intuit
 - **UI Aesthetics**: It's functional, but yes, I admit, it's a bit on the 'ugly' side for now. Aesthetic improvements are underway!
 - **Chaining Visualization**: Planning to add a pop-up box feature for better visualization when hovering over chained buckets.
 - **Event Management**: Refinements in progress for better user experience.
-![image](https://github.com/calin2244/c-hash-table/assets/95591065/95b851ea-c80c-4c79-81bd-9b09d4c5a1b2)
+![image](https://github.com/calin2244/c-hash-table/assets/95591065/de6632ac-8c72-4508-9920-6100b21003aa)
 
 
 ---
