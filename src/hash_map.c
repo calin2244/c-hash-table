@@ -271,6 +271,11 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
 // End of Collosion Handling
 
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size){
+    if(key == NULL || val == NULL){
+        printf("The Key and/or the Value you're trying to insert is/are NULL.\n");
+        return;
+    }
+    
     size_t idx = ht->hash_func(key, ht->capacity);
     
     /*  
@@ -301,13 +306,35 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
 
 /*
     * NEW! Bulk Insert
-    TODO
+    * User is asked nicely to either provide a SENTINEL as the last element
+    * of the array, either pass in the correct length as the argument!
 */
-void ht_bulk_insert(HashTable* ht, const char** keys, const void** values, size_t* val_size){
-    return;
+void ht_bulk_insert(HashTable* ht, const KeyValuePair* kv, size_t length){
+    for(size_t i = 0; i < length; ++i){
+        if(IS_SENTINEL(kv[i])){
+            return;
+        }
+
+        if(!kv[i].key){
+            printf("Error: NULL key provided at index %zu.\n", i);
+            continue;
+        }
+
+        if(!kv[i].value){
+            printf("Error: NULL value provided for key %s at index %zu.\n", kv[i].key, i);
+            continue;
+        }
+
+        ht_insert(ht, kv[i].key, kv[i].value, kv[i].val_size);
+    }
 }
 
 bool ht_has_key(const HashTable* ht, const char* key){
+    if(!key){
+        printf("Can't look for a NULL Key.\n");
+        return false;
+    }
+
     size_t idx = ht->hash_func(key, ht->capacity);
     
     if(ht->coll_resolution == CHAINING){
@@ -346,7 +373,12 @@ bool ht_has_key(const HashTable* ht, const char* key){
 /*
     *NEW!! This will now return the index from where it removed or SIZE_MAX
 */
-size_t ht_remove(HashTable* ht, const char* key) {
+size_t ht_remove(HashTable* ht, const char* key){
+    if(!key){
+        printf("Can't remove a NULL Key.\n");
+        return SIZE_MAX;
+    }
+
     size_t idx = ht->hash_func(key, ht->capacity);
     Ht_Item** curr_item = &ht->buckets[idx];
 
@@ -434,6 +466,11 @@ void ht_bulk_remove(HashTable* ht, const char** keys, size_t rows){
     * Assumes user won't free the memory
 */
 void* ht_get_item(HashTable* ht, const char* key){
+    if(!key){
+        printf("Can't lookup a NULL Key.\n");
+        return NULL;
+    }
+
     size_t idx = ht->hash_func(key, ht->capacity);
     // ? Look Into This after adding Robin Hood
     if(ht->coll_resolution >= LINEAR_PROBING && ht->buckets[idx])
@@ -491,6 +528,11 @@ void* ht_get_item(HashTable* ht, const char* key){
 
 void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_size){
     // ht_insert does the same thing
+    if(!key || !val){
+        printf("The Key and/or the Value you're trying to modify is/are NULL.\n");
+        return;
+    }
+
     ht_insert(ht, key, val, val_size);
 }
 
@@ -569,6 +611,11 @@ void ht_clear(HashTable* ht){
     * Will return false otherwise(slot is already NULL)
 */
 bool ht_purge_slot(HashTable* ht, size_t idx){
+    if(idx >= ht->capacity){
+        printf("IDX %zu is out of the HashTable's boundaries.\n", idx);
+        return false;
+    }
+
     if(ht->buckets[idx] || (ht->buckets[idx] && !ht->buckets[idx]->is_tombstone)){
         free_ht_item(ht->buckets[idx]);
         ht->buckets[idx] = NULL;

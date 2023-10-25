@@ -12,6 +12,8 @@
 #define CHAINING_THRESHOLD 0.7f
 #define OA_THRESHOLD 0.55f
 #define INCREMENTAL_RESIZING 0.5f
+#define SENTINEL {NULL, NULL, 0}
+#define IS_SENTINEL(kv) (!(kv).key && !(kv).value && !(kv).val_size)
 // OA = Open-Addressing, so for both LP and QP
 
 
@@ -55,6 +57,13 @@ typedef struct Ht_Item{
     struct Ht_Item* next;
 }Ht_Item;
 
+// Used for Bulk-Inserting
+typedef struct KeyValuePair{
+    const char* key;
+    const void* value;
+    size_t val_size;
+}KeyValuePair;
+
 typedef struct HashTable{
     size_t size; // *The current size of the Hash Table
     size_t capacity; // *Max Size
@@ -82,6 +91,7 @@ HashTable* ht_create(size_t capacity, size_t (*hash_func)(const char*, size_t), 
 void ht_resize(HashTable* ht, size_t new_capacity);
 void free_ht(HashTable** ht);
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size);
+void ht_bulk_insert(HashTable* ht, const KeyValuePair* kv, size_t length);
 bool ht_has_key(const HashTable* ht, const char* key);
 size_t ht_remove(HashTable* ht, const char* key);
 void ht_bulk_remove(HashTable* ht, const char** keys, size_t rows);
@@ -91,8 +101,6 @@ void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_
 void free_ht_item(Ht_Item* item);
 void ht_clear(HashTable* ht);
 bool ht_purge_slot(HashTable* ht, size_t idx);
-// TODO
-void ht_bulk_insert(HashTable* ht, const char** keys, const void** values, size_t* val_size);
 
 // Helper Functions
 bool isPrime(size_t num);
