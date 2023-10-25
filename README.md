@@ -93,7 +93,10 @@ The capacity of the hash table is always set to a prime number, ensuring optimal
 While the keys are restricted to `char*` for simplicity and robustness, the values are generic (`void*` type). This provides a lot of versatility to the users in what they wish to store in the hash table.
 
 **4. Customizable Hash Functions:**  
-You're not tied to a specific hash function. You can provide your own function pointer to a custom hash function. Example: `size_t fnv_hash_func(const char* key, size_t capacity);`.
+You're not tied to a specific hash function. You can provide your own function pointer to a custom hash function. Example: 
+```cpp
+size_t fnv_hash_func(const char* key, size_t capacity);
+```
 
 **5. Advanced Techniques:**  
 - **Wrap Around Technique**: In open addressing, if the load factor allows, and the desired bucket is full, the table will wrap around and find the first available bucket starting from the beginning.
@@ -113,12 +116,14 @@ Visualization can make understanding and debugging a hash table much more intuit
 - **UI Aesthetics**: It's functional, but yes, I admit, it's a bit on the 'ugly' side for now. Aesthetic improvements are underway!
 - **Chaining Visualization**: Planning to add a pop-up box feature for better visualization when hovering over chained buckets.
 - **Event Management**: Refinements in progress for better user experience.
+![image](https://github.com/calin2244/c-hash-table/assets/95591065/95b851ea-c80c-4c79-81bd-9b09d4c5a1b2)
+
 
 ---
 
 ## 🌐 Upcoming Feature
 
-**Consistent Hash Ring for Distributed Systems**: This feature is nearing its completion. It leverages the hash table implementation for distributed systems. However, as it's still in the testing phase, it won't be made public just yet. Stay tuned for updates!
+**Consistent Hash Ring for Distributed Systems**: This feature is nearing its completion. It leverages the hash table implementation for distributed systems. However, as it's still in the testing phase, it won't be made public just yet.
 
 ---
 
