@@ -1,7 +1,6 @@
 #pragma once
 #include "CustomColors.hpp"
 #include "../include/SFMLTypes.hpp"
-#include <string>
 
 #define CURSOR_BLINK_INTERVAL 0.5f
 
@@ -34,7 +33,6 @@ public:
     void renderToScreen(renderWin& window) noexcept;
     void setPosition(float x, float y) noexcept;
     void setLabel(const std::string_view labelName, const UIStyle& styleConfig, const float yOffset = 0.0f) noexcept;
-    //? Might delete unicode support, as my C-HashTable implementation doesn't support ATM unicode
     void handleEvent(event event, renderWin& window);
     void updateText() noexcept;
     void setActive(bool active) noexcept;

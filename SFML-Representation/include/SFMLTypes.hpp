@@ -1,5 +1,6 @@
 #pragma once
 #include "../SFML/include/SFML/Graphics.hpp"
+#include <string>
 
 namespace SFMLAliases{
     using vec2f = sf::Vector2<float>;
@@ -20,7 +21,6 @@ namespace SFMLAliases{
 }
 
 // TODO: Add the character size here
-
 struct UIStyle{
     sf::Font& font;
     sf::Color text_color = sf::Color::Black;

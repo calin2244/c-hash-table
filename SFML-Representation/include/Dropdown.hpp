@@ -1,17 +1,28 @@
 #pragma once
-#include "Button.hpp"
+#include "../include/SFMLTypes.hpp"
+#include "../include/CustomColors.hpp"
 #include <vector>
-#include <string>
 
-class Dropdown: public Button{
-    std::vector<std::string> dropDownOptions;
-    std::string activeOption;
-    bool isExpanded;
-    
+using namespace SFMLAliases;
+
+class Dropdown {
 public:
-    // Dropdown(const vec2f& pos, const vec2f& size, const UIStyle& styleConfig, 
-    //          const std::vector<std::string> dropDownOptions = std::vector<std::string>(), FontManager* fontManager, uint16_t characterSize = 16)
-    //          : Button(pos, size, styleConfig, dropDownOptions.at[0], fontManager, characterSize), dropDownOptions(dropDownOptions) {}
+    Dropdown();
+    Dropdown(const vec2f& position, const std::vector<std::string>& options, const std::string& defaultOptionText, sf::Font* font);
+    void draw(renderWin& window);
+    void toggleIsExpanded();
+    void handleEvent(event event);
+    void handleMouseButtonPressed(event event);
+    void handleMouseMoved(event event);
 
-
+private:
+    sfrectangle box;
+    sftext selectedOptionText;
+    sftext labelText;
+    font* font;
+    bool isExpanded;
+    std::vector<std::string> dropdownOptions;
+    std::string_view defaultOptionText;
+    size_t selectedOptionIndex;
+    size_t hoveredOptionIndex;
 };
