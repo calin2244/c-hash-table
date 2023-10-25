@@ -108,6 +108,11 @@ While bulk removal is supported, bulk insertion is currently in the works.
 ---
 
 ## 🎨 SFML Visualization - WIP
+# 🚨 IMPORTANT 🚨
+
+- **SFML Dependency**: This project relies on SFML specifically for Windows with a 64-bit architecture.
+- **Makefile Configuration**: The Makefile is tailored for `make` installed via Chocolatey (from PowerShell).
+- ❗ **Linux Users**: This will **NOT** compile and execute on Linux systems.
 
 Visualization can make understanding and debugging a hash table much more intuitive. This section is still under active development, but here's what we have:
 
