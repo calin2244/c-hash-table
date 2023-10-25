@@ -205,14 +205,6 @@ void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const
         curr_item = curr_item->next;
     }
 
-    /*
-        * Resizing, the threshold being 0.7
-    */
-    if(ht->load_factor > CHAINING_THRESHOLD){
-        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
-        idx = ht->hash_func(key, ht->capacity);
-    }
-
     // Key doesn't exist, just create a new one
     Ht_Item* new_item = ht_item_create(key, val, val_size);
     new_item->next = ht->buckets[idx];
@@ -241,16 +233,6 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
         
         idx = (idx + 1) % ht->capacity;
         itm = ht->buckets[idx];
-    }
-    
-    /*  
-        * Resizing, the threshold being 0.5
-        * When working with linear probing, there will be a lot more clustering
-        * so the THRESHOLD for linear-probing HashTable will be a little lower 
-    */
-    if(ht->load_factor >= OA_THRESHOLD){
-        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
-        idx = ht->hash_func(key, ht->capacity);
     }
 
     ht->buckets[idx] = ht_item_create(key, val, val_size);
@@ -283,16 +265,6 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
         itm = ht->buckets[idx];
     }
 
-    /*  
-        * Resizing, the threshold being 0.5
-        * When working with linear probing, there will be a lot more clustering
-        * so the THRESHOLD for linear-probing HashTable will be a little lower 
-    */
-    if(ht->load_factor >= OA_THRESHOLD){
-        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
-        idx = ht->hash_func(key, ht->capacity);
-    }
-
     ht->buckets[idx] = ht_item_create(key, val, val_size);
     ht->size++;
 }
@@ -301,6 +273,19 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size){
     size_t idx = ht->hash_func(key, ht->capacity);
     
+    /*  
+        * Resizing, the threshold being 0.7 and 0.45
+        * When working with linear probing, there will be a lot more clustering
+        * so the THRESHOLD for linear-probing HashTable will be a little lower 
+    */
+    if(ht->coll_resolution == CHAINING && ht->load_factor > CHAINING_THRESHOLD){
+        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
+        idx = ht->hash_func(key, ht->capacity);
+    }
+    else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= OA_THRESHOLD){
+        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
+        idx = ht->hash_func(key, ht->capacity);
+    }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
     
     if(ht->coll_resolution == CHAINING){

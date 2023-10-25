@@ -1,3 +1,4 @@
+#pragma once
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
 #include <errno.h>
