@@ -130,7 +130,7 @@ size_t fnv_hash_func(const char* key, size_t capacity);
 ---
 
 ## 🎨 SFML Visualization - WIP
-# 🚨 IMPORTANT 🚨
+**🚨 IMPORTANT 🚨**
 
 - **SFML Dependency**: This project relies on SFML specifically for Windows with a 64-bit architecture.
 - **Makefile Configuration**: The Makefile is tailored for `make` installed via Chocolatey (from PowerShell).
