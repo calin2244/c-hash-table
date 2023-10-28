@@ -1,5 +1,35 @@
 #include "hash_map.h"
 
+// Print Helpers
+void ht_print(HashTable* ht, PrintHelper printHasht){
+    for(size_t hash = 0; hash < ht->capacity; ++hash){
+        Ht_Item* item = ht->buckets[hash];
+
+        // Open Addressing Check
+        if(item && item->is_tombstone)
+            continue;
+
+        if(item){
+            printHasht(hash, ht->buckets[hash]->key, ht->buckets[hash]->val);
+            if(item->next){
+                (void)printf("-----------------------\nChained with: \n");
+                item = item->next;
+                while(item){
+                    (void)printf("[%s: %s]", (char*)item->key, (char*)item->val);
+                    item = item->next;
+                    if(item)
+                        (void)printf(", ");
+                }
+                (void)printf("\n-----------------------\n\n");
+            }
+        }
+    }
+}
+
+void print_str_str(size_t hash, const char* key, const void* val){
+    printf("Index:%li, Key: %s, Value: %s\n", hash, (char*)key, (char*)val);
+}
+
 /*
     * Hash Functions!
     * I've implemented below a normal hash function
@@ -103,7 +133,10 @@ HashTable* ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), C
     return hash_t;
 }
 
+bool inResizeMode = false;
 void ht_resize(HashTable* ht, size_t new_capacity){
+    inResizeMode = true;
+
     // Create a new hash table with the new capacity
     HashTable* new_ht = ht_create(new_capacity, ht->hash_func, ht->coll_resolution);
     if(!new_ht){
@@ -113,21 +146,20 @@ void ht_resize(HashTable* ht, size_t new_capacity){
     // Iterate through the old buckets and rehash the items into the new hash table
     for(size_t i = 0; i < ht->capacity; ++i){
         Ht_Item* item = ht->buckets[i];
-        while(item){
+        while(item && !item->is_tombstone){
             ht_insert(new_ht, item->key, item->val, item->val_size);
             Ht_Item* next = item->next;
             free_ht_item(item);
             item = next;
         }
     }
+    inResizeMode = false;
 
     // Free the old buckets
     free(ht->buckets);
 
     // Update the hash table properties
-    ht->size = new_ht->size;
     ht->capacity = new_ht->capacity;
-    ht->collisions = new_ht->collisions;
     ht->load_factor = 0;
 
     // Update the buckets pointer to point to the new buckets
@@ -190,12 +222,14 @@ void handle_collision(Ht_Item* item, const void* val, size_t val_size){
     (void)memcpy(item->val, val, val_size);
 }
 
-void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
+void handle_insertion_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     Ht_Item* curr_item = ht->buckets[idx];
     
-    while(curr_item){
+    if(curr_item){
         ht->collisions++;
-        
+    }
+
+    while(curr_item){        
         if(strcmp((char*)curr_item->key, (char*)key) == 0){
             handle_collision(curr_item, val, val_size);
             return;
@@ -209,11 +243,17 @@ void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const
     Ht_Item* new_item = ht_item_create(key, val, val_size);
     new_item->next = ht->buckets[idx];
     ht->buckets[idx] = new_item;
+
     ht->size++;
 }
 
-void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
+void handle_insertion_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
+    size_t initial_idx = idx;
     Ht_Item* itm = ht->buckets[idx];
+
+    if(itm){
+        ht->collisions++;
+    }
 
     while(ht->buckets[idx]){
         if(itm->is_tombstone){
@@ -222,8 +262,6 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
 
             return;
         }
-
-        ht->collisions++;
         
         if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
             // Handle the collision
@@ -231,20 +269,26 @@ void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void*
             return;
         }
         
-        idx = (idx + 1) % ht->capacity;
+        idx = (idx + 1) % (ht->capacity - 1);
         itm = ht->buckets[idx];
+
+        // Probed everywhere
+        if(idx == initial_idx){
+            return;
+        }
     }
 
     ht->buckets[idx] = ht_item_create(key, val, val_size);
     ht->size++;
 }
 
-void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
+void handle_insertion_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
     size_t initial_idx = idx;
-    uint16_t curr_power = 1;    
+    uint32_t curr_power = 1;    
     Ht_Item* itm = ht->buckets[idx];
 
     while(ht->buckets[idx]){
+
         if(itm->is_tombstone){
             handle_tombstones(itm, key, val, val_size);
 
@@ -252,22 +296,25 @@ void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void*
             return;
         }
 
-        ht->collisions++;
-
-        if(strcmp((char*)(ht->buckets[idx])->key, (char*)key) == 0){
+        if(strcmp(ht->buckets[idx]->key, key) == 0){
             handle_collision(ht->buckets[idx], val, val_size);            
             return;
         }
 
         idx = (initial_idx + (size_t)(curr_power * curr_power)) % ht->capacity;
         curr_power++;
-
         itm = ht->buckets[idx];
     }
 
     ht->buckets[idx] = ht_item_create(key, val, val_size);
     ht->size++;
 }
+
+// TODO
+// void handle_insertion_robin_hood(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size){
+//     return;
+// }
+
 // End of Collosion Handling
 
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size){
@@ -283,24 +330,32 @@ void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size)
         * When working with linear probing, there will be a lot more clustering
         * so the THRESHOLD for linear-probing HashTable will be a little lower 
     */
-    if(ht->coll_resolution == CHAINING && ht->load_factor > CHAINING_THRESHOLD){
+    if(!inResizeMode && ht->coll_resolution == CHAINING && ht->load_factor > CHAINING_THRESHOLD){
         ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
         idx = ht->hash_func(key, ht->capacity);
     }
-    else if(ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= OA_THRESHOLD){
-        ht_resize(ht, generateNextGreaterPrimeNumber(ht->capacity * INCREMENTAL_RESIZING + ht->capacity));
+    // * LP, QP and Robin Hood
+    else if(!inResizeMode && ht->coll_resolution >= LINEAR_PROBING && ht->load_factor >= OA_THRESHOLD){
+        ht_resize(ht, generateNextGreaterPrimeNumber((size_t)(ht->capacity * INCREMENTAL_RESIZING) + ht->capacity));
         idx = ht->hash_func(key, ht->capacity);
     }
     ht->load_factor = (float)ht->size / (float)ht->capacity;
     
-    if(ht->coll_resolution == CHAINING){
-        handle_collision_chaining(ht, idx, key, val, val_size);
-    }
-    else if(ht->coll_resolution == LINEAR_PROBING){
-        handle_collision_lp(ht, idx, key, val, val_size);
-    }
-    else if(ht->coll_resolution == QUADRATIC_PROBING){
-        handle_collision_qp(ht, idx, key, val, val_size);
+    switch(ht->coll_resolution){
+        case CHAINING:
+            handle_insertion_chaining(ht, idx, key, val, val_size);
+            break;
+        case LINEAR_PROBING:
+            handle_insertion_lp(ht, idx, key, val, val_size);
+            break;
+        case QUADRATIC_PROBING:
+            handle_insertion_qp(ht, idx, key, val, val_size);
+            break;
+        // case ROBIN_HOOD:
+        //     handle_insertion_robin_hood(ht, idx, key, val, val_size); // TODO
+        //     break;
+        default:
+            break;
     }
 }
 
@@ -447,6 +502,10 @@ size_t ht_remove(HashTable* ht, const char* key){
 
             idx = (initial_idx + (size_t)(curr_power * curr_power)) % ht->capacity;
             curr_power++;
+
+            if(initial_idx == idx){
+                return SIZE_MAX;
+            }
         }
 
         return SIZE_MAX;
@@ -506,7 +565,7 @@ void* ht_get_item(HashTable* ht, const char* key){
     }
     else if(ht->coll_resolution == QUADRATIC_PROBING){
         size_t initial_idx = idx;
-        uint16_t curr_power = 0;
+        uint32_t curr_power = 0;
 
         while(ht->buckets[idx]){
 
