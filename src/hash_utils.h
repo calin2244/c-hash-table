@@ -2,8 +2,7 @@
 // This file includes parsing from files, printing the hash_table, Peformance Stats
 
 #include <errno.h>
-struct HashTable; // Forward-Declaration
-typedef void (*PrintHelper)(size_t, const char*, const void*);
+#include "hash_map.h"
 
 typedef struct{
     size_t maxChainLen;
@@ -34,35 +33,6 @@ pair maximumChainLength(HashTable* ht){
     out.maxChainLen = maxLen;
     out.hashOfMaxChain = posOfMaxLen;
     return out;
-}
-
-void ht_print(HashTable* ht, PrintHelper printHasht){
-    for(size_t hash = 0; hash < ht->capacity; ++hash){
-        Ht_Item* item = ht->buckets[hash];
-
-        // Open Addressing Check
-        if(item && item->is_tombstone)
-            continue;
-
-        if(item){
-            printHasht(hash, ht->buckets[hash]->key, ht->buckets[hash]->val);
-            if(item->next){
-                (void)printf("-----------------------\nChained with: \n");
-                item = item->next;
-                while(item){
-                    (void)printf("[%s: %s]", (char*)item->key, (char*)item->val);
-                    item = item->next;
-                    if(item)
-                        (void)printf(", ");
-                }
-                (void)printf("\n-----------------------\n\n");
-            }
-        }
-    }
-}
-
-void print_string_string(size_t hash, const char* key, const void* val){
-    printf("Index:%li, Key: %s, Value: %s\n", hash, (char*)key, (char*)val);
 }
 
 void ht_print_time_performances(HashTable* ht){

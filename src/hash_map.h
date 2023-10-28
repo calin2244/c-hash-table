@@ -10,20 +10,11 @@
 
 #define CAPACITY 100 // Table Size
 #define CHAINING_THRESHOLD 0.7f
-#define OA_THRESHOLD 0.55f
+#define OA_THRESHOLD 0.65f
 #define INCREMENTAL_RESIZING 0.5f
 #define SENTINEL {NULL, NULL, 0}
 #define IS_SENTINEL(kv) (!(kv).key && !(kv).value && !(kv).val_size)
 // OA = Open-Addressing, so for both LP and QP
-
-
-// *FOR PERFORMANCE TESTING
-#define max(a,b) \
-    ({ __typeof__ (a) _a = (a); \
-        __typeof__ (b) _b = (b); \
-        _a > _b ? _a : _b; }) \
-
-// *
 
 typedef enum{
     CHAINING = 0,
@@ -31,6 +22,8 @@ typedef enum{
     QUADRATIC_PROBING, 
     ROBIN_HOOD // TODO: Implemnt this
 }CollisionResolution;
+
+typedef void (*PrintHelper)(size_t, const char*, const void*);
 
 /* 
     !NOTES!!
@@ -54,6 +47,7 @@ typedef struct Ht_Item{
     void* val;
     size_t val_size;
     bool is_tombstone; // *Used for Open Addresing Coll Resolutions
+    int64_t distance; // *Probing distance(Used for Robin Hood CollRes)
     struct Ht_Item* next;
 }Ht_Item;
 
@@ -81,9 +75,10 @@ size_t jenkins_hash_func(const char* key, size_t capacity);
 
 // Collision Handling
 void handle_collision(Ht_Item* item, const void* val, size_t val_size);    
-void handle_collision_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
-void handle_collision_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
-void handle_collision_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
+void handle_insertion_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
+void handle_insertion_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
+void handle_insertion_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
+// void handle_insertion_robin_hood(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_tombstones(Ht_Item* itm, const char* key, const void* val, size_t val_size);
 
 // Hash Table Functions
@@ -101,9 +96,11 @@ void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_
 void free_ht_item(Ht_Item* item);
 void ht_clear(HashTable* ht);
 bool ht_purge_slot(HashTable* ht, size_t idx);
+void ht_print(HashTable* ht, PrintHelper printHasht);
 
 // Helper Functions
 bool isPrime(size_t num);
 size_t generateNextGreaterPrimeNumber(size_t num);
+void print_str_str(size_t hash, const char* key, const void* val);
 
 #endif // HASH_TABLE_H
