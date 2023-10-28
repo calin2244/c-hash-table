@@ -7,13 +7,13 @@ Welcome to `c-hash-table`! This is a robust, handcrafted implementation of a Has
 ---
 
 ## Initialization & Usage Guide
-## 1. Setting Up
+## 1. Setting Up🛠️
 
 Before using the c-hash-table, ensure you include the appropriate header in your source file:
 ```cpp
 #include "hash_map.h"
 ```
-## 2. Creating the Hash Table
+## 2. Creating the Hash Table📦
 
 The core of this library is the HashTable structure. To create a new hash table, use the ht_create function:
 
@@ -26,7 +26,7 @@ HashTable* ht = ht_create(
 ```
 Replace `fnv_hash_func` with your desired hash function and `LINEAR_PROBING` with your chosen collision resolution method.
 
-## 3. Inserting Elements
+## 3. Inserting Elements➕
 
 To insert an element into your hash table:
 
@@ -36,7 +36,7 @@ const char* value = "exampleValue";
 ht_insert(ht, key, value, strlen(value) + 1); // +1 for NULL terminator
 ```
 
-## 4. Retrieving Elements
+## 4. Retrieving Elements🔍
 
 To retrieve an element:
 
@@ -47,7 +47,7 @@ if(retrieved_value) {
 }
 ```
 
-## 5. Removing Elements
+## 5. Removing Elements❌
 
 For removing an element:
 
@@ -58,15 +58,30 @@ if(removed) {
 }
 ```
 
-## 6. Bulk Operations
+## 6. Bulk Operations➕❌
+
+For bulk insertions:
+```cpp
+// SENTINEL macro is defined in hash_map.h
+KeyValuePair items_to_insert[] = {
+    {"key3", "value3", sizeof("value3") + 1},
+    {"key4", "value4", sizeof("value4") + 1},
+    SENTINEL
+};
+
+ht_bulk_insert(ht, items_to_insert, 2); // where 2 is the number of key-value pairs
+```
+---
+**🚨Note🚨**: Users are asked to either:
+- Use the `SENTINEL` as the last element, **or**
+- Provide the correct length of the `KeyValuePair` array.
+---
 
 For bulk removals:
 
 ```cpp
 const char* keys_to_remove[] = {"key1", "key2"};
 ht_bulk_remove(ht, keys_to_remove, 2); // where 2 is the number of keys
-
-    Bulk insertions are still in development and will be added soon.
 ```
 
 ## 7. Cleanup
@@ -78,6 +93,11 @@ free_ht(&ht);
 ```
 
 ## 🔗 Features
+
+**0. Key and Value Constraints:**
+
+Please note that this implementation does not support storing `NULL` for either keys or values. Always ensure that you provide valid, non-null data when interacting with the hash table, 
+otherwise you'll get an stdout message.
 
 **1. Collision Resolutions:**  
 The heart of any hash table lies in how it addresses collisions. This particular implementation supports three distinct Collision Resolutions:
@@ -102,13 +122,15 @@ size_t fnv_hash_func(const char* key, size_t capacity);
 - **Wrap Around Technique**: In open addressing, if the load factor allows, and the desired bucket is full, the table will wrap around and find the first available bucket starting from the beginning.
 - **Tombstone Technique**: For deletions, a 'tombstone' is used to mark the spot of a previously occupied bucket.
 
-**6. Bulk Operations:**  
-While bulk removal is supported, bulk insertion is currently in the works.
+**6. Bulk Operations**
+- **Bulk Removal**: Supported and ready for use.
+- **Bulk Insertion**: Supported and ready for use.
+
 
 ---
 
 ## 🎨 SFML Visualization - WIP
-# 🚨 IMPORTANT 🚨
+**🚨 IMPORTANT 🚨**
 
 - **SFML Dependency**: This project relies on SFML specifically for Windows with a 64-bit architecture.
 - **Makefile Configuration**: The Makefile is tailored for `make` installed via Chocolatey (from PowerShell).
