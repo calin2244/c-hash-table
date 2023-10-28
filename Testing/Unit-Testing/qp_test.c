@@ -8,9 +8,9 @@ int main(int argc, char* argv[]){
     
     // User Defined Size
     if(argc > 2){
-        int size = atoi(argv[2]);
-        printf("Size: %d\n", size);
-        hash_t = ht_create((size_t)size, jenkins_hash_func, QUADRATIC_PROBING);
+        size_t capacity = atoi(argv[2]);
+        printf("Initial Capacity: %ld\n", capacity);
+        hash_t = ht_create(capacity, jenkins_hash_func, QUADRATIC_PROBING);
     }
     else{
         // Fixed Size
@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
     
     parseFileAndPopulateHashTable(hash_t, ENTRIES_PATH);
 
-    ht_print_perfomance_stats(hash_t, argc, argv, print_string_string);
+    ht_print_perfomance_stats(hash_t, argc, argv, print_str_str);
 
     parseFileAndRemoveEntries(hash_t, ENTRIES_PATH);
 
