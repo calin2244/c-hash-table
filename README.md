@@ -36,14 +36,30 @@ const char* value = "exampleValue";
 ht_insert(ht, key, value, strlen(value) + 1); // +1 for NULL terminator
 ```
 
+To insert a generic element into your hash table:
+
+```cpp
+typedef struct Generic{
+    uint8_t asciiChar;
+    float decimalNum;
+    const char* string;
+}Generic; // Example of a struct
+
+Generic item = {
+    .asciiChar = 'A', .decimalNum = .6f, .string = "Cat"
+};
+
+ht_insert(ht, "Cat Generic Item", &item, sizeof(Generic));
+```
+
 ## 4. Retrieving Elements🔍
 
 To retrieve an element:
 
 ```cpp
-void* retrieved_value = ht_get_item(ht, "exampleKey");
+Generic* retrieved_value = (Generic*)ht_get_item(ht, "exampleKey");
 if(retrieved_value) {
-    printf("Value: %s\n", (char*)retrieved_value);
+    printf("Value: %s\n", retrieved_value->string);
 }
 ```
 
@@ -84,7 +100,33 @@ const char* keys_to_remove[] = {"key1", "key2"};
 ht_bulk_remove(ht, keys_to_remove, 2); // where 2 is the number of keys
 ```
 
-## 7. Cleanup
+## 7. Checking Key Presence🔍
+
+To ascertain whether a specific key exists within your hash table:
+```cpp
+bool key_exists = ht_has_key(ht, "Cat Generic Item");
+if(key_exists) {
+    printf("The key exists in the hash table!\n");
+} else {
+    printf("The key does not exist in the hash table.\n");
+}
+```
+
+## 8. Printing to Standard Output `stdout`🖨️
+- print_helper is a custom-defined callback function tailored for formatting and presenting each key-value pair in your desired style
+```cpp
+typedef void (*PrintHelper)(size_t, const char*, const void*);
+```
+
+- index: Specifies the position of the key-value pair within the hash table.
+- key: Represents the key of the current pair.
+- value: Denotes the associated value for the current key.
+
+```cpp
+ht_print(ht, print_helper);
+```
+
+## 9. Cleanup
 
 After you're done using the hash table, ensure you free the memory:
 
@@ -125,7 +167,6 @@ size_t fnv_hash_func(const char* key, size_t capacity);
 **6. Bulk Operations**
 - **Bulk Removal**: Supported and ready for use.
 - **Bulk Insertion**: Supported and ready for use.
-
 
 ---
 
