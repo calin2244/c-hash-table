@@ -46,7 +46,7 @@ int main(int argc, char* argv[]){
     
     // Time Performances and Stats
     (void)printf("Total time to traverse Hash Table: %f\n", cpu_time_used);
-    ht_print_perfomance_stats(hash_t, argc, argv, print_string_string);
+    ht_print_perfomance_stats(hash_t, argc, argv, print_str_str);
 
     // Saving the Data from the Hash Table in a text file
     FILE* out = fopen(OUTPUT_PATH_CHAINING, "w");
