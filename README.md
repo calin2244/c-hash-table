@@ -143,6 +143,18 @@ ht_set_custom_resize_strategy(ht, 25'000, 2);
 // Between 25k and 50k size, resize factor is 0.5, reducing the growth rate
 ht_set_custom_resize_strategy(ht, 50'000, .5f);
 ```
+
+You can also set the resize threshold
+```cpp
+    // Will resize only after 95% of the table is full
+    ht_set_resize_threshold(ht, .95f);
+    /*
+        * DEFAULT VALUES
+        * CHAINING_THRESHOLD 0.7f
+        * OA_THRESHOLD 0.65f
+    */
+```
+
 Performance comparison example(found in `Testing/coll_res_testing.cpp`)
 - Without custom resize policy:
 ```cpp
