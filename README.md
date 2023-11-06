@@ -7,13 +7,13 @@ Welcome to `c-hash-table`! This is a robust, handcrafted implementation of a Has
 ---
 
 ## Initialization & Usage Guide
-## 1. Setting Up🛠️
+**1. Setting Up🛠️**
 
 Before using the c-hash-table, ensure you include the appropriate header in your source file:
 ```cpp
 #include "hash_map.h"
 ```
-## 2. Creating the Hash Table📦
+**2. Creating the Hash Table📦8**
 
 The core of this library is the HashTable structure. To create a new hash table, use the ht_create function:
 
@@ -26,7 +26,7 @@ HashTable* ht = ht_create(
 ```
 Replace `fnv_hash_func` with your desired hash function and `LINEAR_PROBING` with your chosen collision resolution method.
 
-## 3. Inserting Elements➕
+**3. Inserting Elements➕**
 
 To insert an element into your hash table:
 
@@ -52,7 +52,7 @@ Generic item = {
 ht_insert(ht, "Cat Generic Item", &item, sizeof(Generic));
 ```
 
-## 4. Retrieving Elements🔍
+**4. Retrieving Elements🔍**
 
 To retrieve an element:
 
@@ -63,7 +63,7 @@ if(retrieved_value) {
 }
 ```
 
-## 5. Removing Elements❌
+**5. Removing Elements❌**
 
 For removing an element:
 
@@ -74,7 +74,7 @@ if(removed) {
 }
 ```
 
-## 6. Bulk Operations➕❌
+**6. Bulk Operations➕❌**
 
 For bulk insertions:
 ```cpp
@@ -100,7 +100,7 @@ const char* keys_to_remove[] = {"key1", "key2"};
 ht_bulk_remove(ht, keys_to_remove, 2); // where 2 is the number of keys
 ```
 
-## 7. Checking Key Presence🔍
+**7. Checking Key Presence🔍**
 
 To ascertain whether a specific key exists within your hash table:
 ```cpp
@@ -112,7 +112,7 @@ if(key_exists) {
 }
 ```
 
-## 8. Printing to Standard Output `stdout`🖨️
+**8. Printing to Standard Output `stdout`🖨️**
 - print_helper is a custom-defined callback function tailored for formatting and presenting each key-value pair in your desired style
 ```cpp
 typedef void (*PrintHelper)(size_t, const char*, const void*);
@@ -125,8 +125,45 @@ typedef void (*PrintHelper)(size_t, const char*, const void*);
 ```cpp
 ht_print(ht, print_helper);
 ```
+**9. Custom Resize Policy📏**
 
-## 9. Cleanup
+* To enhance the performance of your hash table under varying load factors, you can define custom resize policies. This feature allows you to specify different resize factors that are applied when certain capacity thresholds are crossed, enabling more efficient use of memory and potentially better access patterns.
+
+The ht_set_custom_resize_strategy function allows you to establish these policies dynamically:
+
+    capacity_threshold: A size_t value determining the bucket count at which a resize operation is triggered.
+
+    associated_resize_factor: A float value that indicates the multiplication factor to use for resizing. A factor greater than 1.0 results in the table growing, whereas a factor less than 1.0 will shrink it.
+
+```cpp
+HashTable* ht = ht_create(1000, fnv_hash_func, coll_res);
+
+// Up to 25k size, resize factor is 2, doubling the table size at each resize
+ht_set_custom_resize_strategy(ht, 25'000, 2);
+// Between 25k and 50k size, resize factor is 0.5, reducing the growth rate
+ht_set_custom_resize_strategy(ht, 50'000, .5f);
+```
+Performance comparison example(found in `Testing/coll_res_testing.cpp`)
+- Without custom resize policy:
+```cpp
+time ./coll_res l
+Size: 0
+All extensive tests passed!
+./coll_res l  0.3s user 0.01s system 98% cpu 0.308 total
+```
+
+- With custom resize policy:
+```cpp
+time ./coll_res l
+Size: 0
+All extensive tests passed!
+./coll_res l  0.2s user 0.01s system 98% cpu 0.308 total
+```
+
+Use this when needed! Implement custom resize strategies especially when managing `large data sets` to maintain high performance and efficient resource utilization.
+
+
+**10. Cleanup**
 
 After you're done using the hash table, ensure you free the memory:
 
@@ -147,6 +184,8 @@ The heart of any hash table lies in how it addresses collisions. This particular
 - **Open Addressing**:
   - Linear Probing
   - Quadratic Probing
+  - Double Hashing
+  - (SOON) Robin Hood
 
 **2. Prime Capacity:**  
 The capacity of the hash table is always set to a prime number, ensuring optimal distribution and minimizing collisions.
