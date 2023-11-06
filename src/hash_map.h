@@ -12,14 +12,24 @@
 #define CHAINING_THRESHOLD 0.7f
 #define OA_THRESHOLD 0.65f
 #define INCREMENTAL_RESIZING 0.5f
+#define SMALL_CAPACITY 1000
+#define MEDIUM_CAPACITY 10000
 #define SENTINEL {NULL, NULL, 0}
 #define IS_SENTINEL(kv) (!(kv).key && !(kv).value && !(kv).val_size)
+#define IS_CHAINING(ht) (ht->coll_resolution == CHAINING)
+#define IS_OA(ht) (ht->coll_resolution >= LINEAR_PROBING)
 // OA = Open-Addressing, so for both LP and QP
+
+typedef enum{
+    HT_SUCCESS = 0,
+    HT_NO_ACTION
+}Ht_ExitCode;
 
 typedef enum{
     CHAINING = 0,
     LINEAR_PROBING,
     QUADRATIC_PROBING, 
+    DOUBLE_HASHING,
     ROBIN_HOOD // TODO: Implemnt this
 }CollisionResolution;
 
@@ -42,6 +52,9 @@ typedef void (*PrintHelper)(size_t, const char*, const void*);
     * slot, where he will insert the new key into.
 */ 
 
+/***********************
+ *       STRUCTS       *
+ ***********************/
 typedef struct Ht_Item{
     char* key;
     void* val;
@@ -58,32 +71,62 @@ typedef struct KeyValuePair{
     size_t val_size;
 }KeyValuePair;
 
-typedef struct HashTable{
-    size_t size; // *The current size of the Hash Table
-    size_t capacity; // *Max Size
-    int collisions; // *Total number of collisions
-    float load_factor; // *Resizing Mechanism
-    Ht_Item** buckets;
-    size_t (*hash_func)(const char*, size_t);
-    CollisionResolution coll_resolution;
-}HashTable;
+typedef struct ResizeStrategy{
+    size_t capacity_threshold;
+    float resize_factor;
+}ResizeStrategy;
 
-// Hash Functions
+typedef struct HashTable {
+    // Size and Capacity
+    size_t size;                // Current number of elements
+    size_t capacity;            // Maximum number of elements before resizing
+
+    // Load and Resizing
+    float load_factor;          // Current load of the table (size/capacity)
+    float resize_threshold;     // Threshold for when to resize
+    float resize_factor;        // Current factor by which to resize
+    ResizeStrategy* resize_strategies; // User-provided resize strategies
+    size_t num_resize_strategies;
+
+    // Collision info
+    int collisions;             // Total collisions encountered
+    CollisionResolution coll_resolution; // Strategy for handling collisions
+
+    // Hashing
+    size_t (*hash_func)(const char*, size_t);       // Primary hash function
+    size_t (*hash_func2)(const char*, size_t);      // Secondary hash function (for double hashing)
+
+    // Data
+    Ht_Item** buckets;          // Array of pointers to items
+
+} HashTable;
+
+/**************************
+ *      HASH FUNCTIONS    *
+ **************************/
 size_t fnv_hash_func(const char* key, size_t capacity);
 size_t fnv_double_hash_func(const char* key, size_t capacity);
 size_t jenkins_hash_func(const char* key, size_t capacity);
 
-// Collision Handling
+/*******************************
+ *    COLLISION HANDLING       *
+ *******************************/
 void handle_collision(Ht_Item* item, const void* val, size_t val_size);    
 void handle_insertion_chaining(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_insertion_lp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_insertion_qp(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
+void handle_insertion_double_hashing(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 // void handle_insertion_robin_hood(HashTable* ht, size_t idx, const char* key, const void* val, size_t val_size);
 void handle_tombstones(Ht_Item* itm, const char* key, const void* val, size_t val_size);
+Ht_ExitCode handle_tombstones_removal(HashTable* ht, size_t idx, const char* key);
 
-// Hash Table Functions
+/*****************************
+ *   CORE FUNCTIONALITIES    *
+ *****************************/
 HashTable* ht_create(size_t capacity, size_t (*hash_func)(const char*, size_t), CollisionResolution coll_res);
+void ht_set_resize_threshold(HashTable* ht, float resize_threshold);
 void ht_resize(HashTable* ht, size_t new_capacity);
+void ht_set_custom_resize_strategy(HashTable* ht, size_t capacity_threshold, float associated_resize_factor);
 void free_ht(HashTable** ht);
 void ht_insert(HashTable* ht, const char* key, const void* val, size_t val_size);
 void ht_bulk_insert(HashTable* ht, const KeyValuePair* kv, size_t length);
@@ -96,11 +139,16 @@ void ht_modify_item(HashTable* ht, const char* key, const void* val, size_t val_
 void free_ht_item(Ht_Item* item);
 void ht_clear(HashTable* ht);
 bool ht_purge_slot(HashTable* ht, size_t idx);
-void ht_print(HashTable* ht, PrintHelper printHasht);
+void update_resize_factor(HashTable* ht);
 
-// Helper Functions
+/****************************
+ *   HELPER FUNCTIONS       *
+ ****************************/
 bool isPrime(size_t num);
 size_t generateNextGreaterPrimeNumber(size_t num);
+void ht_print(HashTable* ht, PrintHelper printHasht);
 void print_str_str(size_t hash, const char* key, const void* val);
+void ht_set_second_hash_func(HashTable* ht, size_t (*hash_func2)(const char*, size_t));
+void calculate_next_probe_index(const HashTable* ht, size_t* idx, size_t* curr_power, size_t* probes, size_t hash1, size_t hash2);
 
 #endif // HASH_TABLE_H

@@ -1,3 +1,4 @@
+#pragma once
 #include "hash_map.h"
 
 typedef struct HashIterator{
