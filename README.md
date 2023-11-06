@@ -133,7 +133,7 @@ The ht_set_custom_resize_strategy function allows you to establish these policie
 
     capacity_threshold: A size_t value determining the bucket count at which a resize operation is triggered.
 
-    associated_resize_factor: A float value that indicates the multiplication factor to use for resizing. A factor greater than 1.0 results in the table growing, whereas a factor less than 1.0 will shrink it.
+    associated_resize_factor: A float value(0-1) that indicates the multiplication factor.
 
 ```cpp
 HashTable* ht = ht_create(1000, fnv_hash_func, coll_res);
