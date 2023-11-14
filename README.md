@@ -13,7 +13,7 @@ Before using the c-hash-table, ensure you include the appropriate header in your
 ```cpp
 #include "hash_map.h"
 ```
-**2. Creating the Hash Table📦8**
+**2. Creating the Hash Table📦**
 
 The core of this library is the HashTable structure. To create a new hash table, use the ht_create function:
 
