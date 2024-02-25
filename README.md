@@ -197,7 +197,7 @@ The heart of any hash table lies in how it addresses collisions. This particular
   - Linear Probing
   - Quadratic Probing
   - Double Hashing
-  - (SOON) Robin Hood
+  - Robin Hood
 
 **2. Prime Capacity:**  
 The capacity of the hash table is always set to a prime number, ensuring optimal distribution and minimizing collisions.
