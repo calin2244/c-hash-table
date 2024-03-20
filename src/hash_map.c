@@ -121,11 +121,7 @@ void print_str_str(size_t hash, const char* key, const void* val){
 }
 // END OF HELPER FUNCTIONS
 
-HashTable* /* The above code appears to be written in the C programming language. However, it is
-incomplete and does not provide enough information to determine what it is doing. The
-code starts with a comment indicating the language, but there is no actual code present.
-The text "ht_cre" and " */
-ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), CollisionResolution coll_res){
+HashTable* ht_create(size_t capacity, size_t(*hash_func)(const char*, size_t), CollisionResolution coll_res){
     HashTable* hash_t = (HashTable*)malloc(sizeof(HashTable));
 
     if(!hash_t){ // malloc failed
